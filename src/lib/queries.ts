@@ -68,10 +68,6 @@ export function getDashboardStats(userId: string) {
   const display = getDisplayCurrency(userId);
   const month = periodRange("month");
   const txs = getUserTransactions(userId);
-  const currencyMap = Object.fromEntries(
-    getUserCurrencies(userId).map((c) => [c.id, c])
-  );
-
   let income = 0;
   let expense = 0;
   const byCategory: Record<string, { name: string; color: string; total: number }> =
@@ -204,7 +200,6 @@ export function getDashboardStats(userId: string) {
           : 0,
     })),
     recent: txs.slice(0, 8),
-    currencyMap,
   };
 }
 
