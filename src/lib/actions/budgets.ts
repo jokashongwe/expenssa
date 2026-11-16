@@ -33,13 +33,11 @@ export async function createBudgetAction(
     return { error: "Vérifiez les champs du budget" };
   }
 
-  db.insert(budgets)
-    .values({
-      id: crypto.randomUUID(),
-      userId: user.id,
-      ...parsed.data,
-    })
-    .run();
+  await db.insert(budgets).values({
+    id: crypto.randomUUID(),
+    userId: user.id,
+    ...parsed.data,
+  });
 
   revalidatePath("/budgets");
   revalidatePath("/dashboard");
@@ -64,10 +62,10 @@ export async function updateBudgetAction(
     return { error: "Données invalides" };
   }
 
-  db.update(budgets)
+  await db
+    .update(budgets)
     .set(parsed.data)
-    .where(and(eq(budgets.id, id), eq(budgets.userId, user.id)))
-    .run();
+    .where(and(eq(budgets.id, id), eq(budgets.userId, user.id)));
 
   revalidatePath("/budgets");
   revalidatePath("/dashboard");
@@ -76,9 +74,9 @@ export async function updateBudgetAction(
 
 export async function deleteBudgetAction(id: string): Promise<ActionState> {
   const user = await requireUser();
-  db.delete(budgets)
-    .where(and(eq(budgets.id, id), eq(budgets.userId, user.id)))
-    .run();
+  await db
+    .delete(budgets)
+    .where(and(eq(budgets.id, id), eq(budgets.userId, user.id)));
   revalidatePath("/budgets");
   revalidatePath("/dashboard");
   return { success: "Budget supprimé" };

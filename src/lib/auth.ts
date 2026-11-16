@@ -26,11 +26,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!parsed.success) return null;
 
         const email = parsed.data.email.toLowerCase().trim();
-        const user = db
+        const [user] = await db
           .select()
           .from(users)
           .where(eq(users.email, email))
-          .get();
+          .limit(1);
 
         if (!user) return null;
 

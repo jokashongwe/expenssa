@@ -1,6 +1,12 @@
-import { sqliteTable, text, real, integer } from "drizzle-orm/sqlite-core";
+import {
+  boolean,
+  doublePrecision,
+  integer,
+  pgTable,
+  text,
+} from "drizzle-orm/pg-core";
 
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
@@ -9,7 +15,7 @@ export const users = sqliteTable("users", {
   createdAt: text("created_at").notNull(),
 });
 
-export const currencies = sqliteTable("currencies", {
+export const currencies = pgTable("currencies", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -17,11 +23,11 @@ export const currencies = sqliteTable("currencies", {
   code: text("code").notNull(),
   name: text("name").notNull(),
   /** How many USD one unit of this currency equals (USD = 1). */
-  rateToUsd: real("rate_to_usd").notNull(),
-  isDefault: integer("is_default", { mode: "boolean" }).notNull().default(false),
+  rateToUsd: doublePrecision("rate_to_usd").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
 });
 
-export const categories = sqliteTable("categories", {
+export const categories = pgTable("categories", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -32,7 +38,7 @@ export const categories = sqliteTable("categories", {
   icon: text("icon").notNull().default("circle"),
 });
 
-export const transactions = sqliteTable("transactions", {
+export const transactions = pgTable("transactions", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -44,13 +50,13 @@ export const transactions = sqliteTable("transactions", {
     .notNull()
     .references(() => currencies.id, { onDelete: "restrict" }),
   type: text("type", { enum: ["income", "expense"] }).notNull(),
-  amount: real("amount").notNull(),
+  amount: doublePrecision("amount").notNull(),
   note: text("note"),
   date: text("date").notNull(),
   createdAt: text("created_at").notNull(),
 });
 
-export const budgets = sqliteTable("budgets", {
+export const budgets = pgTable("budgets", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -61,12 +67,12 @@ export const budgets = sqliteTable("budgets", {
   currencyId: text("currency_id")
     .notNull()
     .references(() => currencies.id, { onDelete: "restrict" }),
-  amount: real("amount").notNull(),
+  amount: doublePrecision("amount").notNull(),
   period: text("period", { enum: ["month", "week", "day"] }).notNull(),
   startDate: text("start_date").notNull(),
 });
 
-export const savingsPlans = sqliteTable("savings_plans", {
+export const savingsPlans = pgTable("savings_plans", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -75,8 +81,8 @@ export const savingsPlans = sqliteTable("savings_plans", {
     .notNull()
     .references(() => currencies.id, { onDelete: "restrict" }),
   name: text("name").notNull(),
-  targetAmount: real("target_amount").notNull(),
-  currentAmount: real("current_amount").notNull().default(0),
+  targetAmount: doublePrecision("target_amount").notNull(),
+  currentAmount: doublePrecision("current_amount").notNull().default(0),
   periodicity: text("periodicity", { enum: ["month", "week", "day"] }).notNull(),
   durationUnits: integer("duration_units").notNull(),
   startDate: text("start_date").notNull(),

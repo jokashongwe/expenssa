@@ -13,7 +13,7 @@ export default async function TransactionsPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
-  const all = getUserTransactions(user.id);
+  const all = await getUserTransactions(user.id);
   const type =
     params.type === "income" || params.type === "expense"
       ? params.type
@@ -25,8 +25,8 @@ export default async function TransactionsPage({
     return true;
   });
 
-  const categories = getUserCategories(user.id);
-  const currencies = getUserCurrencies(user.id);
+  const categories = await getUserCategories(user.id);
+  const currencies = await getUserCurrencies(user.id);
 
   return (
     <TransactionsClient

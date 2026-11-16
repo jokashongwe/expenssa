@@ -31,16 +31,14 @@ export async function createCategoryAction(
     return { error: parsed.error.issues[0]?.message ?? "Données invalides" };
   }
 
-  db.insert(categories)
-    .values({
-      id: crypto.randomUUID(),
-      userId: user.id,
-      name: parsed.data.name.trim(),
-      type: parsed.data.type,
-      color: parsed.data.color,
-      icon: parsed.data.icon,
-    })
-    .run();
+  await db.insert(categories).values({
+    id: crypto.randomUUID(),
+    userId: user.id,
+    name: parsed.data.name.trim(),
+    type: parsed.data.type,
+    color: parsed.data.color,
+    icon: parsed.data.icon,
+  });
 
   revalidatePath("/categories");
   revalidatePath("/transactions");
@@ -64,15 +62,15 @@ export async function updateCategoryAction(
     return { error: "Données invalides" };
   }
 
-  db.update(categories)
+  await db
+    .update(categories)
     .set({
       name: parsed.data.name.trim(),
       type: parsed.data.type,
       color: parsed.data.color,
       icon: parsed.data.icon,
     })
-    .where(and(eq(categories.id, id), eq(categories.userId, user.id)))
-    .run();
+    .where(and(eq(categories.id, id), eq(categories.userId, user.id)));
 
   revalidatePath("/categories");
   return { success: "Catégorie mise à jour" };
@@ -81,9 +79,9 @@ export async function updateCategoryAction(
 export async function deleteCategoryAction(id: string): Promise<ActionState> {
   const user = await requireUser();
   try {
-    db.delete(categories)
-      .where(and(eq(categories.id, id), eq(categories.userId, user.id)))
-      .run();
+    await db
+      .delete(categories)
+      .where(and(eq(categories.id, id), eq(categories.userId, user.id)));
   } catch {
     return { error: "Impossible de supprimer : catégorie utilisée" };
   }

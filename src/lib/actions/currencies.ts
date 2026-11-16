@@ -31,11 +31,11 @@ export async function createCurrencyAction(
   }
 
   const code = parsed.data.code.toUpperCase().trim();
-  const existing = db
+  const [existing] = await db
     .select()
     .from(currencies)
     .where(and(eq(currencies.userId, user.id), eq(currencies.code, code)))
-    .get();
+    .limit(1);
 
   if (existing) {
     return { error: `La devise ${code} existe déjà` };
@@ -43,16 +43,14 @@ export async function createCurrencyAction(
 
   const rateToUsd = code === "USD" ? 1 : unitsPerUsdToRate(parsed.data.unitsPerUsd);
 
-  db.insert(currencies)
-    .values({
-      id: crypto.randomUUID(),
-      userId: user.id,
-      code,
-      name: parsed.data.name.trim(),
-      rateToUsd,
-      isDefault: false,
-    })
-    .run();
+  await db.insert(currencies).values({
+    id: crypto.randomUUID(),
+    userId: user.id,
+    code,
+    name: parsed.data.name.trim(),
+    rateToUsd,
+    isDefault: false,
+  });
 
   revalidatePath("/settings/currencies");
   revalidatePath("/dashboard");
@@ -75,25 +73,25 @@ export async function updateCurrencyAction(
     return { error: "Données invalides" };
   }
 
-  const row = db
+  const [row] = await db
     .select()
     .from(currencies)
     .where(and(eq(currencies.id, id), eq(currencies.userId, user.id)))
-    .get();
+    .limit(1);
 
   if (!row) return { error: "Devise introuvable" };
 
   const code = parsed.data.code.toUpperCase().trim();
   const rateToUsd = code === "USD" ? 1 : unitsPerUsdToRate(parsed.data.unitsPerUsd);
 
-  db.update(currencies)
+  await db
+    .update(currencies)
     .set({
       code,
       name: parsed.data.name.trim(),
       rateToUsd,
     })
-    .where(and(eq(currencies.id, id), eq(currencies.userId, user.id)))
-    .run();
+    .where(and(eq(currencies.id, id), eq(currencies.userId, user.id)));
 
   revalidatePath("/settings/currencies");
   revalidatePath("/dashboard");
@@ -102,11 +100,11 @@ export async function updateCurrencyAction(
 
 export async function deleteCurrencyAction(id: string): Promise<ActionState> {
   const user = await requireUser();
-  const row = db
+  const [row] = await db
     .select()
     .from(currencies)
     .where(and(eq(currencies.id, id), eq(currencies.userId, user.id)))
-    .get();
+    .limit(1);
 
   if (!row) return { error: "Devise introuvable" };
   if (row.isDefault || row.code === "USD") {
@@ -114,9 +112,9 @@ export async function deleteCurrencyAction(id: string): Promise<ActionState> {
   }
 
   try {
-    db.delete(currencies)
-      .where(and(eq(currencies.id, id), eq(currencies.userId, user.id)))
-      .run();
+    await db
+      .delete(currencies)
+      .where(and(eq(currencies.id, id), eq(currencies.userId, user.id)));
   } catch {
     return { error: "Cette devise est utilisée par des transactions ou budgets" };
   }
@@ -129,18 +127,18 @@ export async function setDisplayCurrencyAction(
   code: string
 ): Promise<ActionState> {
   const user = await requireUser();
-  const currency = db
+  const [currency] = await db
     .select()
     .from(currencies)
     .where(and(eq(currencies.userId, user.id), eq(currencies.code, code)))
-    .get();
+    .limit(1);
 
   if (!currency) return { error: "Devise introuvable" };
 
-  db.update(users)
+  await db
+    .update(users)
     .set({ defaultCurrencyCode: currency.code })
-    .where(eq(users.id, user.id))
-    .run();
+    .where(eq(users.id, user.id));
 
   revalidatePath("/settings/currencies");
   revalidatePath("/dashboard");

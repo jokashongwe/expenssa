@@ -12,7 +12,7 @@ import { ExpenseChart } from "@/components/dashboard/expense-chart";
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const stats = getDashboardStats(user.id);
+  const stats = await getDashboardStats(user.id);
   const code = stats.display.code;
 
   return (

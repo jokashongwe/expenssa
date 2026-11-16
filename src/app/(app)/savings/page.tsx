@@ -4,7 +4,7 @@ import { SavingsClient } from "@/components/savings/savings-client";
 
 export default async function SavingsPage() {
   const user = await requireUser();
-  const plans = getSavingsDetails(user.id);
-  const currencies = getUserCurrencies(user.id);
+  const plans = await getSavingsDetails(user.id);
+  const currencies = await getUserCurrencies(user.id);
   return <SavingsClient plans={plans} currencies={currencies} />;
 }

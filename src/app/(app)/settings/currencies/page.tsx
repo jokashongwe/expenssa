@@ -4,9 +4,9 @@ import { CurrenciesClient } from "@/components/currencies/currencies-client";
 
 export default async function CurrenciesPage() {
   const user = await requireUser();
-  const currencies = getUserCurrencies(user.id);
-  const record = getUserRecord(user.id);
-  const display = getDisplayCurrency(user.id);
+  const currencies = await getUserCurrencies(user.id);
+  const record = await getUserRecord(user.id);
+  const display = await getDisplayCurrency(user.id);
   return (
     <CurrenciesClient
       currencies={currencies}

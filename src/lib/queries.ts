@@ -11,21 +11,22 @@ import {
 import { periodRange, type Period } from "@/lib/dates";
 import { toDisplayAmount } from "@/lib/money";
 
-export function getUserRecord(userId: string) {
-  return db.select().from(users).where(eq(users.id, userId)).get()!;
-}
-
-export function getUserCurrencies(userId: string) {
-  return db
+export async function getUserRecord(userId: string) {
+  const [user] = await db
     .select()
-    .from(currencies)
-    .where(eq(currencies.userId, userId))
-    .all();
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return user!;
 }
 
-export function getDisplayCurrency(userId: string) {
-  const user = getUserRecord(userId);
-  const list = getUserCurrencies(userId);
+export async function getUserCurrencies(userId: string) {
+  return db.select().from(currencies).where(eq(currencies.userId, userId));
+}
+
+export async function getDisplayCurrency(userId: string) {
+  const user = await getUserRecord(userId);
+  const list = await getUserCurrencies(userId);
   return (
     list.find((c) => c.code === user.defaultCurrencyCode) ??
     list.find((c) => c.isDefault) ??
@@ -33,16 +34,12 @@ export function getDisplayCurrency(userId: string) {
   );
 }
 
-export function getUserCategories(userId: string) {
-  return db
-    .select()
-    .from(categories)
-    .where(eq(categories.userId, userId))
-    .all();
+export async function getUserCategories(userId: string) {
+  return db.select().from(categories).where(eq(categories.userId, userId));
 }
 
-export function getUserTransactions(userId: string) {
-  return db
+export async function getUserTransactions(userId: string) {
+  const rows = await db
     .select({
       id: transactions.id,
       type: transactions.type,
@@ -59,19 +56,22 @@ export function getUserTransactions(userId: string) {
     .from(transactions)
     .innerJoin(categories, eq(transactions.categoryId, categories.id))
     .innerJoin(currencies, eq(transactions.currencyId, currencies.id))
-    .where(eq(transactions.userId, userId))
-    .all()
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .where(eq(transactions.userId, userId));
+
+  return rows.sort((a, b) => b.date.localeCompare(a.date));
 }
 
-export function getDashboardStats(userId: string) {
-  const display = getDisplayCurrency(userId);
+export async function getDashboardStats(userId: string) {
+  const display = await getDisplayCurrency(userId);
   const month = periodRange("month");
-  const txs = getUserTransactions(userId);
+  const txs = await getUserTransactions(userId);
+
   let income = 0;
   let expense = 0;
-  const byCategory: Record<string, { name: string; color: string; total: number }> =
-    {};
+  const byCategory: Record<
+    string,
+    { name: string; color: string; total: number }
+  > = {};
 
   for (const tx of txs) {
     const converted = toDisplayAmount(
@@ -109,7 +109,7 @@ export function getDashboardStats(userId: string) {
     else monthExpense += converted;
   }
 
-  const budgetRows = db
+  const budgetRows = await db
     .select({
       id: budgets.id,
       amount: budgets.amount,
@@ -124,8 +124,7 @@ export function getDashboardStats(userId: string) {
     .from(budgets)
     .innerJoin(categories, eq(budgets.categoryId, categories.id))
     .innerJoin(currencies, eq(budgets.currencyId, currencies.id))
-    .where(eq(budgets.userId, userId))
-    .all();
+    .where(eq(budgets.userId, userId));
 
   const budgetProgress = budgetRows.map((b) => {
     const range = periodRange(b.period as Period);
@@ -157,7 +156,7 @@ export function getDashboardStats(userId: string) {
     };
   });
 
-  const plans = db
+  const plans = await db
     .select({
       id: savingsPlans.id,
       name: savingsPlans.name,
@@ -170,8 +169,7 @@ export function getDashboardStats(userId: string) {
     })
     .from(savingsPlans)
     .innerJoin(currencies, eq(savingsPlans.currencyId, currencies.id))
-    .where(eq(savingsPlans.userId, userId))
-    .all();
+    .where(eq(savingsPlans.userId, userId));
 
   return {
     display,
@@ -203,10 +201,10 @@ export function getDashboardStats(userId: string) {
   };
 }
 
-export function getBudgetDetails(userId: string) {
-  const display = getDisplayCurrency(userId);
-  const txs = getUserTransactions(userId);
-  const rows = db
+export async function getBudgetDetails(userId: string) {
+  const display = await getDisplayCurrency(userId);
+  const txs = await getUserTransactions(userId);
+  const rows = await db
     .select({
       id: budgets.id,
       amount: budgets.amount,
@@ -222,8 +220,7 @@ export function getBudgetDetails(userId: string) {
     .from(budgets)
     .innerJoin(categories, eq(budgets.categoryId, categories.id))
     .innerJoin(currencies, eq(budgets.currencyId, currencies.id))
-    .where(eq(budgets.userId, userId))
-    .all();
+    .where(eq(budgets.userId, userId));
 
   return rows.map((b) => {
     const range = periodRange(b.period as Period);
@@ -255,7 +252,7 @@ export function getBudgetDetails(userId: string) {
   });
 }
 
-export function getSavingsDetails(userId: string) {
+export async function getSavingsDetails(userId: string) {
   return db
     .select({
       id: savingsPlans.id,
@@ -270,11 +267,10 @@ export function getSavingsDetails(userId: string) {
     })
     .from(savingsPlans)
     .innerJoin(currencies, eq(savingsPlans.currencyId, currencies.id))
-    .where(eq(savingsPlans.userId, userId))
-    .all();
+    .where(eq(savingsPlans.userId, userId));
 }
 
-export function filterTransactionsInRange(
+export async function filterTransactionsInRange(
   userId: string,
   start: string,
   end: string
@@ -288,6 +284,5 @@ export function filterTransactionsInRange(
         gte(transactions.date, start),
         lte(transactions.date, end)
       )
-    )
-    .all();
+    );
 }

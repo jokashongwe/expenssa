@@ -36,7 +36,11 @@ export async function registerAction(
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const existing = db.select().from(users).where(eq(users.email, email)).get();
+  const [existing] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
   if (existing) {
     return { error: "Un compte existe déjà avec cet email" };
   }
@@ -44,18 +48,16 @@ export async function registerAction(
   const id = crypto.randomUUID();
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
 
-  db.insert(users)
-    .values({
-      id,
-      email,
-      name: parsed.data.name.trim(),
-      passwordHash,
-      defaultCurrencyCode: "USD",
-      createdAt: new Date().toISOString(),
-    })
-    .run();
+  await db.insert(users).values({
+    id,
+    email,
+    name: parsed.data.name.trim(),
+    passwordHash,
+    defaultCurrencyCode: "USD",
+    createdAt: new Date().toISOString(),
+  });
 
-  seedUserDefaults(id);
+  await seedUserDefaults(id);
 
   try {
     await signIn("credentials", {

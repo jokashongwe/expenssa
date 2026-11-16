@@ -12,28 +12,24 @@ const DEFAULT_CATEGORIES = [
   { name: "Autre", type: "expense" as const, color: "#64748b", icon: "circle" },
 ];
 
-export function seedUserDefaults(userId: string) {
-  db.insert(currencies)
-    .values({
+export async function seedUserDefaults(userId: string) {
+  await db.insert(currencies).values({
+    id: crypto.randomUUID(),
+    userId,
+    code: "USD",
+    name: "Dollar américain",
+    rateToUsd: 1,
+    isDefault: true,
+  });
+
+  await db.insert(categories).values(
+    DEFAULT_CATEGORIES.map((cat) => ({
       id: crypto.randomUUID(),
       userId,
-      code: "USD",
-      name: "Dollar américain",
-      rateToUsd: 1,
-      isDefault: true,
-    })
-    .run();
-
-  for (const cat of DEFAULT_CATEGORIES) {
-    db.insert(categories)
-      .values({
-        id: crypto.randomUUID(),
-        userId,
-        name: cat.name,
-        type: cat.type,
-        color: cat.color,
-        icon: cat.icon,
-      })
-      .run();
-  }
+      name: cat.name,
+      type: cat.type,
+      color: cat.color,
+      icon: cat.icon,
+    }))
+  );
 }

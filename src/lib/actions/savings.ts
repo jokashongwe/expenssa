@@ -35,19 +35,17 @@ export async function createSavingsPlanAction(
     return { error: "Vérifiez les champs du plan d'épargne" };
   }
 
-  db.insert(savingsPlans)
-    .values({
-      id: crypto.randomUUID(),
-      userId: user.id,
-      name: parsed.data.name.trim(),
-      currencyId: parsed.data.currencyId,
-      targetAmount: parsed.data.targetAmount,
-      currentAmount: 0,
-      periodicity: parsed.data.periodicity,
-      durationUnits: parsed.data.durationUnits,
-      startDate: parsed.data.startDate,
-    })
-    .run();
+  await db.insert(savingsPlans).values({
+    id: crypto.randomUUID(),
+    userId: user.id,
+    name: parsed.data.name.trim(),
+    currencyId: parsed.data.currencyId,
+    targetAmount: parsed.data.targetAmount,
+    currentAmount: 0,
+    periodicity: parsed.data.periodicity,
+    durationUnits: parsed.data.durationUnits,
+    startDate: parsed.data.startDate,
+  });
 
   revalidatePath("/savings");
   revalidatePath("/dashboard");
@@ -73,7 +71,8 @@ export async function updateSavingsPlanAction(
     return { error: "Données invalides" };
   }
 
-  db.update(savingsPlans)
+  await db
+    .update(savingsPlans)
     .set({
       name: parsed.data.name.trim(),
       currencyId: parsed.data.currencyId,
@@ -82,8 +81,7 @@ export async function updateSavingsPlanAction(
       durationUnits: parsed.data.durationUnits,
       startDate: parsed.data.startDate,
     })
-    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)))
-    .run();
+    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)));
 
   revalidatePath("/savings");
   revalidatePath("/dashboard");
@@ -102,20 +100,20 @@ export async function contributeSavingsAction(
     return { error: "Montant de versement invalide" };
   }
 
-  const plan = db
+  const [plan] = await db
     .select()
     .from(savingsPlans)
     .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)))
-    .get();
+    .limit(1);
 
   if (!plan) return { error: "Plan introuvable" };
 
-  db.update(savingsPlans)
+  await db
+    .update(savingsPlans)
     .set({
       currentAmount: sql`${savingsPlans.currentAmount} + ${amount}`,
     })
-    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)))
-    .run();
+    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)));
 
   revalidatePath("/savings");
   revalidatePath("/dashboard");
@@ -124,9 +122,9 @@ export async function contributeSavingsAction(
 
 export async function deleteSavingsPlanAction(id: string): Promise<ActionState> {
   const user = await requireUser();
-  db.delete(savingsPlans)
-    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)))
-    .run();
+  await db
+    .delete(savingsPlans)
+    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)));
   revalidatePath("/savings");
   revalidatePath("/dashboard");
   return { success: "Plan supprimé" };

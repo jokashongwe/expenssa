@@ -33,7 +33,7 @@ export async function createTransactionAction(
     return { error: parsed.error.issues[0]?.message ?? "Données invalides" };
   }
 
-  const category = db
+  const [category] = await db
     .select()
     .from(categories)
     .where(
@@ -42,23 +42,21 @@ export async function createTransactionAction(
         eq(categories.userId, user.id)
       )
     )
-    .get();
+    .limit(1);
 
   if (!category) return { error: "Catégorie introuvable" };
 
-  db.insert(transactions)
-    .values({
-      id: crypto.randomUUID(),
-      userId: user.id,
-      categoryId: parsed.data.categoryId,
-      currencyId: parsed.data.currencyId,
-      type: category.type,
-      amount: parsed.data.amount,
-      note: parsed.data.note?.trim() || null,
-      date: parsed.data.date,
-      createdAt: new Date().toISOString(),
-    })
-    .run();
+  await db.insert(transactions).values({
+    id: crypto.randomUUID(),
+    userId: user.id,
+    categoryId: parsed.data.categoryId,
+    currencyId: parsed.data.currencyId,
+    type: category.type,
+    amount: parsed.data.amount,
+    note: parsed.data.note?.trim() || null,
+    date: parsed.data.date,
+    createdAt: new Date().toISOString(),
+  });
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
@@ -84,7 +82,7 @@ export async function updateTransactionAction(
     return { error: "Données invalides" };
   }
 
-  const category = db
+  const [category] = await db
     .select()
     .from(categories)
     .where(
@@ -93,11 +91,12 @@ export async function updateTransactionAction(
         eq(categories.userId, user.id)
       )
     )
-    .get();
+    .limit(1);
 
   if (!category) return { error: "Catégorie introuvable" };
 
-  db.update(transactions)
+  await db
+    .update(transactions)
     .set({
       categoryId: parsed.data.categoryId,
       currencyId: parsed.data.currencyId,
@@ -106,8 +105,7 @@ export async function updateTransactionAction(
       note: parsed.data.note?.trim() || null,
       date: parsed.data.date,
     })
-    .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)))
-    .run();
+    .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
@@ -117,9 +115,9 @@ export async function updateTransactionAction(
 
 export async function deleteTransactionAction(id: string): Promise<ActionState> {
   const user = await requireUser();
-  db.delete(transactions)
-    .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)))
-    .run();
+  await db
+    .delete(transactions)
+    .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
   revalidatePath("/budgets");
@@ -140,6 +138,5 @@ export async function listTransactions(filters?: {
     .select()
     .from(transactions)
     .where(and(...conditions))
-    .orderBy(desc(transactions.date))
-    .all();
+    .orderBy(desc(transactions.date));
 }
