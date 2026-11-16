@@ -26,11 +26,23 @@ export async function getUserCurrencies(userId: string) {
 
 export async function getDisplayCurrency(userId: string) {
   const user = await getUserRecord(userId);
-  const list = await getUserCurrencies(userId);
+  let list = await getUserCurrencies(userId);
+
+  // Répare les comptes créés sans seed devise/catégories
+  if (list.length === 0 && user) {
+    try {
+      const { seedUserDefaults } = await import("@/lib/seed");
+      await seedUserDefaults(userId);
+      list = await getUserCurrencies(userId);
+    } catch {
+      // ignore — getUserRecord / requireUser gèrent les sessions orphelines
+    }
+  }
+
   return (
     list.find((c) => c.code === user.defaultCurrencyCode) ??
     list.find((c) => c.isDefault) ??
-    list[0]
+    list[0]!
   );
 }
 

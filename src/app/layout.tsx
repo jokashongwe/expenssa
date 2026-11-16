@@ -7,12 +7,14 @@ const roboto = Roboto({
   variable: "--font-roboto",
   subsets: ["latin"],
   weight: ["300", "400", "500", "700"],
+  display: "swap",
 });
 
 const robotoMono = Roboto_Mono({
   variable: "--font-roboto-mono",
   subsets: ["latin"],
   weight: ["400", "500"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -40,8 +42,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
-      <body className={`${roboto.variable} ${robotoMono.variable} antialiased`}>
+    <html lang="fr" className={`${roboto.variable} ${robotoMono.variable}`}>
+      <body className={`${roboto.className} antialiased`}>
         {children}
         <Toaster richColors position="top-center" />
       </body>

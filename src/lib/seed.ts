@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { categories, currencies } from "@/lib/db/schema";
 
@@ -13,23 +14,39 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export async function seedUserDefaults(userId: string) {
-  await db.insert(currencies).values({
-    id: crypto.randomUUID(),
-    userId,
-    code: "USD",
-    name: "Dollar américain",
-    rateToUsd: 1,
-    isDefault: true,
-  });
+  const existingCurrencies = await db
+    .select({ id: currencies.id })
+    .from(currencies)
+    .where(eq(currencies.userId, userId))
+    .limit(1);
 
-  await db.insert(categories).values(
-    DEFAULT_CATEGORIES.map((cat) => ({
+  if (existingCurrencies.length === 0) {
+    await db.insert(currencies).values({
       id: crypto.randomUUID(),
       userId,
-      name: cat.name,
-      type: cat.type,
-      color: cat.color,
-      icon: cat.icon,
-    }))
-  );
+      code: "USD",
+      name: "Dollar américain",
+      rateToUsd: 1,
+      isDefault: true,
+    });
+  }
+
+  const existingCategories = await db
+    .select({ id: categories.id })
+    .from(categories)
+    .where(eq(categories.userId, userId))
+    .limit(1);
+
+  if (existingCategories.length === 0) {
+    await db.insert(categories).values(
+      DEFAULT_CATEGORIES.map((cat) => ({
+        id: crypto.randomUUID(),
+        userId,
+        name: cat.name,
+        type: cat.type,
+        color: cat.color,
+        icon: cat.icon,
+      }))
+    );
+  }
 }

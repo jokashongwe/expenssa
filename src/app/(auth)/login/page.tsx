@@ -8,7 +8,7 @@ export default function LoginPage() {
         <div className="mb-6">
           <Link
             href="/"
-            className="font-heading text-3xl font-semibold text-teal-800"
+            className="font-sans text-3xl font-medium text-teal-800"
           >
             Expenssa
           </Link>

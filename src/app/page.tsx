@@ -10,7 +10,7 @@ export default async function HomePage() {
   return (
     <div className="app-bg flex min-h-dvh flex-col">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-16">
-        <p className="font-heading text-5xl font-semibold tracking-tight text-teal-800 md:text-6xl">
+        <p className="font-sans text-5xl font-medium tracking-tight text-teal-800 md:text-6xl">
           Expenssa
         </p>
         <h1 className="mt-4 max-w-xl text-2xl font-medium text-foreground md:text-3xl">

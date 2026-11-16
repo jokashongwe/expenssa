@@ -68,7 +68,7 @@ export function SavingsClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-3xl font-semibold">Épargne</h1>
+          <h1 className="font-sans text-3xl font-medium">Épargne</h1>
           <p className="text-sm text-muted-foreground">
             Objectifs avec contribution calculée selon la durée
           </p>

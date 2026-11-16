@@ -71,7 +71,7 @@ export function TransactionsClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-3xl font-semibold">Transactions</h1>
+          <h1 className="font-sans text-3xl font-medium">Transactions</h1>
           <p className="text-sm text-muted-foreground">
             Revenus et dépenses multi-devises
           </p>
@@ -256,7 +256,7 @@ export function TransactionsClient({
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`tabular-nums font-semibold ${
+                  className={`tabular-nums font-medium ${
                     tx.type === "income" ? "text-emerald-700" : "text-rose-700"
                   }`}
                 >

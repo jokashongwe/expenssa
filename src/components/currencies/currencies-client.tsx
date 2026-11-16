@@ -43,7 +43,7 @@ export function CurrenciesClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-3xl font-semibold">Devises</h1>
+          <h1 className="font-sans text-3xl font-medium">Devises</h1>
           <p className="text-sm text-muted-foreground">
             USD par défaut. Ajoutez CDF ou d&apos;autres devises manuellement.
           </p>
@@ -142,7 +142,7 @@ export function CurrenciesClient({
           >
             <div>
               <div className="flex items-center gap-2">
-                <p className="font-semibold">{c.code}</p>
+                <p className="font-medium">{c.code}</p>
                 <p className="text-sm text-muted-foreground">{c.name}</p>
                 {c.code === displayCode && (
                   <Badge className="bg-teal-700 text-white">Affichage</Badge>

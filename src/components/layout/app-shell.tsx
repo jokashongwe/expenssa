@@ -77,7 +77,7 @@ export function AppShell({
         <aside className="hidden w-60 shrink-0 border-r border-border/60 bg-card/70 p-4 backdrop-blur md:flex md:flex-col">
           <div className="mb-8 px-2">
             <Link href="/dashboard" className="block">
-              <p className="font-heading text-2xl font-semibold tracking-tight text-teal-800">
+              <p className="font-sans text-2xl font-medium tracking-tight text-teal-800">
                 Expenssa
               </p>
               <p className="text-xs text-muted-foreground">Gestion de budget</p>
@@ -113,7 +113,7 @@ export function AppShell({
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-4">
                 <SheetHeader className="mb-4 px-0 text-left">
-                  <SheetTitle className="font-heading text-teal-800">
+                  <SheetTitle className="font-sans text-teal-800">
                     Expenssa
                   </SheetTitle>
                 </SheetHeader>
@@ -130,7 +130,7 @@ export function AppShell({
                 </form>
               </SheetContent>
             </Sheet>
-            <p className="font-heading text-lg font-semibold text-teal-800">
+            <p className="font-sans text-lg font-medium text-teal-800">
               Expenssa
             </p>
           </header>

@@ -19,7 +19,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">
+          <h1 className="font-sans text-3xl font-medium tracking-tight">
             Bonjour, {user.name?.split(" ")[0]}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">
+            <p className="text-2xl font-medium tabular-nums">
               {formatMoney(stats.balance, code)}
             </p>
           </CardContent>
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums text-emerald-700">
+            <p className="text-2xl font-medium tabular-nums text-emerald-700">
               {formatMoney(stats.monthIncome, code)}
             </p>
           </CardContent>
@@ -61,7 +61,7 @@ export default async function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums text-rose-700">
+            <p className="text-2xl font-medium tabular-nums text-rose-700">
               {formatMoney(stats.monthExpense, code)}
             </p>
           </CardContent>
