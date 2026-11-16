@@ -23,6 +23,7 @@ export async function requireUser() {
   if (!row) {
     // Session JWT orpheline (ex. après migration SQLite → Supabase)
     await signOut({ redirectTo: "/login" });
+    redirect("/login");
   }
 
   return {
