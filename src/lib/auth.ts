@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { authConfig } from "@/lib/auth.config";
-import { db } from "@/lib/db";
+import { db, withDbRetry } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 
 const credentialsSchema = z.object({
@@ -26,11 +26,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!parsed.success) return null;
 
         const email = parsed.data.email.toLowerCase().trim();
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, email))
-          .limit(1);
+        const [user] = await withDbRetry(() =>
+          db.select().from(users).where(eq(users.email, email)).limit(1)
+        );
 
         if (!user) return null;
 

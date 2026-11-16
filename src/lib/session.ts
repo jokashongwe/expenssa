@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { db, withDbRetry } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 
 export async function requireUser() {
@@ -10,15 +10,17 @@ export async function requireUser() {
     redirect("/login");
   }
 
-  const [row] = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      name: users.name,
-    })
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
+  const [row] = await withDbRetry(() =>
+    db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+      })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1)
+  );
 
   if (!row) {
     // Session JWT orpheline (ex. après migration SQLite → Supabase)
@@ -37,15 +39,20 @@ export async function getOptionalUser() {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  const [row] = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      name: users.name,
-    })
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
-
-  return row ?? null;
+  try {
+    const [row] = await withDbRetry(() =>
+      db
+        .select({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+        })
+        .from(users)
+        .where(eq(users.id, session.user.id))
+        .limit(1)
+    );
+    return row ?? null;
+  } catch {
+    return null;
+  }
 }
