@@ -27,7 +27,7 @@ export async function getUserCurrencies(userId: string) {
 export async function getDisplayCurrency(userId: string) {
   const user = await getUserRecord(userId);
   let list = await getUserCurrencies(userId);
-
+ 
   // Répare les comptes créés sans seed devise/catégories
   if (list.length === 0 && user) {
     try {
