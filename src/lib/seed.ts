@@ -1,0 +1,39 @@
+import { db } from "@/lib/db";
+import { categories, currencies } from "@/lib/db/schema";
+
+const DEFAULT_CATEGORIES = [
+  { name: "Salaire", type: "income" as const, color: "#059669", icon: "wallet" },
+  { name: "Autres revenus", type: "income" as const, color: "#10b981", icon: "plus-circle" },
+  { name: "Alimentation", type: "expense" as const, color: "#f59e0b", icon: "utensils" },
+  { name: "Transport", type: "expense" as const, color: "#3b82f6", icon: "car" },
+  { name: "Logement", type: "expense" as const, color: "#8b5cf6", icon: "home" },
+  { name: "Loisirs", type: "expense" as const, color: "#ec4899", icon: "smile" },
+  { name: "Santé", type: "expense" as const, color: "#ef4444", icon: "heart" },
+  { name: "Autre", type: "expense" as const, color: "#64748b", icon: "circle" },
+];
+
+export function seedUserDefaults(userId: string) {
+  db.insert(currencies)
+    .values({
+      id: crypto.randomUUID(),
+      userId,
+      code: "USD",
+      name: "Dollar américain",
+      rateToUsd: 1,
+      isDefault: true,
+    })
+    .run();
+
+  for (const cat of DEFAULT_CATEGORIES) {
+    db.insert(categories)
+      .values({
+        id: crypto.randomUUID(),
+        userId,
+        name: cat.name,
+        type: cat.type,
+        color: cat.color,
+        icon: cat.icon,
+      })
+      .run();
+  }
+}
