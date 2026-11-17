@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { budgets } from "@/lib/db/schema";
-import { requireUser } from "@/lib/session";
+import { getSpaceContext } from "@/lib/space";
 import type { ActionState } from "./auth";
 
 const budgetSchema = z.object({
@@ -20,7 +20,9 @@ export async function createBudgetAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const user = await requireUser();
+  const { ownerId, canWrite } = await getSpaceContext();
+  if (!canWrite) return { error: "Lecture seule sur cet espace" };
+
   const parsed = budgetSchema.safeParse({
     categoryId: formData.get("categoryId"),
     currencyId: formData.get("currencyId"),
@@ -28,14 +30,11 @@ export async function createBudgetAction(
     period: formData.get("period"),
     startDate: formData.get("startDate"),
   });
-
-  if (!parsed.success) {
-    return { error: "Vérifiez les champs du budget" };
-  }
+  if (!parsed.success) return { error: "Vérifiez les champs du budget" };
 
   await db.insert(budgets).values({
     id: crypto.randomUUID(),
-    userId: user.id,
+    userId: ownerId,
     ...parsed.data,
   });
 
@@ -48,7 +47,9 @@ export async function updateBudgetAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const user = await requireUser();
+  const { ownerId, canWrite } = await getSpaceContext();
+  if (!canWrite) return { error: "Lecture seule sur cet espace" };
+
   const id = String(formData.get("id") ?? "");
   const parsed = budgetSchema.safeParse({
     categoryId: formData.get("categoryId"),
@@ -57,15 +58,12 @@ export async function updateBudgetAction(
     period: formData.get("period"),
     startDate: formData.get("startDate"),
   });
-
-  if (!id || !parsed.success) {
-    return { error: "Données invalides" };
-  }
+  if (!id || !parsed.success) return { error: "Données invalides" };
 
   await db
     .update(budgets)
     .set(parsed.data)
-    .where(and(eq(budgets.id, id), eq(budgets.userId, user.id)));
+    .where(and(eq(budgets.id, id), eq(budgets.userId, ownerId)));
 
   revalidatePath("/budgets");
   revalidatePath("/dashboard");
@@ -73,10 +71,12 @@ export async function updateBudgetAction(
 }
 
 export async function deleteBudgetAction(id: string): Promise<ActionState> {
-  const user = await requireUser();
+  const { ownerId, canWrite } = await getSpaceContext();
+  if (!canWrite) return { error: "Lecture seule sur cet espace" };
+
   await db
     .delete(budgets)
-    .where(and(eq(budgets.id, id), eq(budgets.userId, user.id)));
+    .where(and(eq(budgets.id, id), eq(budgets.userId, ownerId)));
   revalidatePath("/budgets");
   revalidatePath("/dashboard");
   return { success: "Budget supprimé" };

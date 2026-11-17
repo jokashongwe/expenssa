@@ -1,12 +1,16 @@
-import { requireUser } from "@/lib/session";
-import { getDisplayCurrency, getUserCurrencies, getUserRecord } from "@/lib/queries";
+import {
+  getDisplayCurrency,
+  getUserCurrencies,
+  getUserRecord,
+} from "@/lib/queries";
+import { getSpaceContext } from "@/lib/space";
 import { CurrenciesClient } from "@/components/currencies/currencies-client";
 
 export default async function CurrenciesPage() {
-  const user = await requireUser();
-  const currencies = await getUserCurrencies(user.id);
-  const record = await getUserRecord(user.id);
-  const display = await getDisplayCurrency(user.id);
+  const space = await getSpaceContext();
+  const currencies = await getUserCurrencies(space.ownerId);
+  const record = await getUserRecord(space.ownerId);
+  const display = await getDisplayCurrency(space.ownerId);
   return (
     <CurrenciesClient
       currencies={currencies}

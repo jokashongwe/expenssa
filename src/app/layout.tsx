@@ -19,7 +19,7 @@ const robotoMono = Roboto_Mono({
 
 export const metadata: Metadata = {
   title: "Expenssa",
-  description: "Gérez vos revenus, dépenses, budgets et épargne — multi-devises",
+  description: "Gérez votre budget, maîtrisez vos dépenses",
   applicationName: "Expenssa",
   appleWebApp: {
     capable: true,
@@ -27,6 +27,10 @@ export const metadata: Metadata = {
     title: "Expenssa",
   },
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    apple: [{ url: "/icons/icon-192.png" }],
+  },
 };
 
 export const viewport: Viewport = {

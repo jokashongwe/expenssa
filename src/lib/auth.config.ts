@@ -16,6 +16,7 @@ export const authConfig = {
       const isPublic =
         isAuthPage ||
         pathname.startsWith("/api/auth") ||
+        pathname.startsWith("/api/logout") ||
         pathname === "/" ||
         pathname.startsWith("/offline") ||
         pathname.startsWith("/icons") ||

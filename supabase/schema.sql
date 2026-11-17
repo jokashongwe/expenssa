@@ -79,3 +79,16 @@ CREATE TABLE IF NOT EXISTS budget_planned_items (
 
 CREATE INDEX IF NOT EXISTS idx_planned_budget ON budget_planned_items(budget_id);
 CREATE INDEX IF NOT EXISTS idx_planned_user ON budget_planned_items(user_id);
+
+CREATE TABLE IF NOT EXISTS space_shares (
+  id TEXT PRIMARY KEY,
+  owner_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  member_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'editor',
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL,
+  CONSTRAINT space_shares_owner_member_unique UNIQUE (owner_user_id, member_user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_space_shares_owner ON space_shares(owner_user_id);
+CREATE INDEX IF NOT EXISTS idx_space_shares_member ON space_shares(member_user_id);

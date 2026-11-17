@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { categories, transactions } from "@/lib/db/schema";
-import { requireUser } from "@/lib/session";
+import { getSpaceContext } from "@/lib/space";
 import type { ActionState } from "./auth";
 
 const transactionSchema = z.object({
@@ -20,7 +20,9 @@ export async function createTransactionAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const user = await requireUser();
+  const { ownerId, canWrite } = await getSpaceContext();
+  if (!canWrite) return { error: "Lecture seule sur cet espace" };
+
   const parsed = transactionSchema.safeParse({
     categoryId: formData.get("categoryId"),
     currencyId: formData.get("currencyId"),
@@ -28,7 +30,6 @@ export async function createTransactionAction(
     note: formData.get("note") || undefined,
     date: formData.get("date"),
   });
-
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Données invalides" };
   }
@@ -39,16 +40,15 @@ export async function createTransactionAction(
     .where(
       and(
         eq(categories.id, parsed.data.categoryId),
-        eq(categories.userId, user.id)
+        eq(categories.userId, ownerId)
       )
     )
     .limit(1);
-
   if (!category) return { error: "Catégorie introuvable" };
 
   await db.insert(transactions).values({
     id: crypto.randomUUID(),
-    userId: user.id,
+    userId: ownerId,
     categoryId: parsed.data.categoryId,
     currencyId: parsed.data.currencyId,
     type: category.type,
@@ -68,7 +68,9 @@ export async function updateTransactionAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const user = await requireUser();
+  const { ownerId, canWrite } = await getSpaceContext();
+  if (!canWrite) return { error: "Lecture seule sur cet espace" };
+
   const id = String(formData.get("id") ?? "");
   const parsed = transactionSchema.safeParse({
     categoryId: formData.get("categoryId"),
@@ -77,10 +79,7 @@ export async function updateTransactionAction(
     note: formData.get("note") || undefined,
     date: formData.get("date"),
   });
-
-  if (!id || !parsed.success) {
-    return { error: "Données invalides" };
-  }
+  if (!id || !parsed.success) return { error: "Données invalides" };
 
   const [category] = await db
     .select()
@@ -88,11 +87,10 @@ export async function updateTransactionAction(
     .where(
       and(
         eq(categories.id, parsed.data.categoryId),
-        eq(categories.userId, user.id)
+        eq(categories.userId, ownerId)
       )
     )
     .limit(1);
-
   if (!category) return { error: "Catégorie introuvable" };
 
   await db
@@ -105,7 +103,7 @@ export async function updateTransactionAction(
       note: parsed.data.note?.trim() || null,
       date: parsed.data.date,
     })
-    .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
+    .where(and(eq(transactions.id, id), eq(transactions.userId, ownerId)));
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
@@ -114,10 +112,12 @@ export async function updateTransactionAction(
 }
 
 export async function deleteTransactionAction(id: string): Promise<ActionState> {
-  const user = await requireUser();
+  const { ownerId, canWrite } = await getSpaceContext();
+  if (!canWrite) return { error: "Lecture seule sur cet espace" };
+
   await db
     .delete(transactions)
-    .where(and(eq(transactions.id, id), eq(transactions.userId, user.id)));
+    .where(and(eq(transactions.id, id), eq(transactions.userId, ownerId)));
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
   revalidatePath("/budgets");
@@ -128,8 +128,8 @@ export async function listTransactions(filters?: {
   type?: "income" | "expense";
   categoryId?: string;
 }) {
-  const user = await requireUser();
-  const conditions = [eq(transactions.userId, user.id)];
+  const { ownerId } = await getSpaceContext();
+  const conditions = [eq(transactions.userId, ownerId)];
   if (filters?.type) conditions.push(eq(transactions.type, filters.type));
   if (filters?.categoryId)
     conditions.push(eq(transactions.categoryId, filters.categoryId));

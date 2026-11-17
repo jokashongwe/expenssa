@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { BrandLogo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 
 export default async function HomePage() {
@@ -10,10 +11,8 @@ export default async function HomePage() {
   return (
     <div className="app-bg flex min-h-dvh flex-col">
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-16">
-        <p className="font-sans text-5xl font-medium tracking-tight text-teal-800 md:text-6xl">
-          Expenssa
-        </p>
-        <h1 className="mt-4 max-w-xl text-2xl font-medium text-foreground md:text-3xl">
+        <BrandLogo size="lg" priority className="max-w-full" />
+        <h1 className="mt-6 max-w-xl text-2xl font-medium text-foreground md:text-3xl">
           Votre budget, clairement.
         </h1>
         <p className="mt-3 max-w-lg text-muted-foreground">

@@ -1,18 +1,18 @@
-import { requireUser } from "@/lib/session";
 import {
   getBudgetDetails,
   getUserCategories,
   getUserCurrencies,
 } from "@/lib/queries";
+import { getSpaceContext } from "@/lib/space";
 import { BudgetsClient } from "@/components/budgets/budgets-client";
 
 export default async function BudgetsPage() {
-  const user = await requireUser();
-  const budgets = await getBudgetDetails(user.id);
-  const categories = (await getUserCategories(user.id)).filter(
+  const space = await getSpaceContext();
+  const budgets = await getBudgetDetails(space.ownerId);
+  const categories = (await getUserCategories(space.ownerId)).filter(
     (c) => c.type === "expense"
   );
-  const currencies = await getUserCurrencies(user.id);
+  const currencies = await getUserCurrencies(space.ownerId);
   return (
     <BudgetsClient
       budgets={budgets}

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { savingsPlans } from "@/lib/db/schema";
-import { requireUser } from "@/lib/session";
+import { getSpaceContext } from "@/lib/space";
 import type { ActionState } from "./auth";
 
 const savingsSchema = z.object({
@@ -21,7 +21,9 @@ export async function createSavingsPlanAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const user = await requireUser();
+  const { ownerId, canWrite } = await getSpaceContext();
+  if (!canWrite) return { error: "Lecture seule sur cet espace" };
+
   const parsed = savingsSchema.safeParse({
     name: formData.get("name"),
     currencyId: formData.get("currencyId"),
@@ -30,14 +32,13 @@ export async function createSavingsPlanAction(
     durationUnits: formData.get("durationUnits"),
     startDate: formData.get("startDate"),
   });
-
   if (!parsed.success) {
     return { error: "Vérifiez les champs du plan d'épargne" };
   }
 
   await db.insert(savingsPlans).values({
     id: crypto.randomUUID(),
-    userId: user.id,
+    userId: ownerId,
     name: parsed.data.name.trim(),
     currencyId: parsed.data.currencyId,
     targetAmount: parsed.data.targetAmount,
@@ -56,7 +57,9 @@ export async function updateSavingsPlanAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const user = await requireUser();
+  const { ownerId, canWrite } = await getSpaceContext();
+  if (!canWrite) return { error: "Lecture seule sur cet espace" };
+
   const id = String(formData.get("id") ?? "");
   const parsed = savingsSchema.safeParse({
     name: formData.get("name"),
@@ -66,10 +69,7 @@ export async function updateSavingsPlanAction(
     durationUnits: formData.get("durationUnits"),
     startDate: formData.get("startDate"),
   });
-
-  if (!id || !parsed.success) {
-    return { error: "Données invalides" };
-  }
+  if (!id || !parsed.success) return { error: "Données invalides" };
 
   await db
     .update(savingsPlans)
@@ -81,7 +81,7 @@ export async function updateSavingsPlanAction(
       durationUnits: parsed.data.durationUnits,
       startDate: parsed.data.startDate,
     })
-    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)));
+    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, ownerId)));
 
   revalidatePath("/savings");
   revalidatePath("/dashboard");
@@ -92,10 +92,11 @@ export async function contributeSavingsAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const user = await requireUser();
+  const { ownerId, canWrite } = await getSpaceContext();
+  if (!canWrite) return { error: "Lecture seule sur cet espace" };
+
   const id = String(formData.get("id") ?? "");
   const amount = Number(formData.get("amount"));
-
   if (!id || !Number.isFinite(amount) || amount <= 0) {
     return { error: "Montant de versement invalide" };
   }
@@ -103,9 +104,8 @@ export async function contributeSavingsAction(
   const [plan] = await db
     .select()
     .from(savingsPlans)
-    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)))
+    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, ownerId)))
     .limit(1);
-
   if (!plan) return { error: "Plan introuvable" };
 
   await db
@@ -113,7 +113,7 @@ export async function contributeSavingsAction(
     .set({
       currentAmount: sql`${savingsPlans.currentAmount} + ${amount}`,
     })
-    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)));
+    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, ownerId)));
 
   revalidatePath("/savings");
   revalidatePath("/dashboard");
@@ -121,10 +121,12 @@ export async function contributeSavingsAction(
 }
 
 export async function deleteSavingsPlanAction(id: string): Promise<ActionState> {
-  const user = await requireUser();
+  const { ownerId, canWrite } = await getSpaceContext();
+  if (!canWrite) return { error: "Lecture seule sur cet espace" };
+
   await db
     .delete(savingsPlans)
-    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, user.id)));
+    .where(and(eq(savingsPlans.id, id), eq(savingsPlans.userId, ownerId)));
   revalidatePath("/savings");
   revalidatePath("/dashboard");
   return { success: "Plan supprimé" };

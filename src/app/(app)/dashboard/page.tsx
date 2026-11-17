@@ -4,29 +4,34 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { ExpenseChart } from "@/components/dashboard/expense-chart";
 import { formatDateFr } from "@/lib/dates";
 import { formatMoney, periodLabel } from "@/lib/money";
 import { getDashboardStats } from "@/lib/queries";
-import { requireUser } from "@/lib/session";
-import { ExpenseChart } from "@/components/dashboard/expense-chart";
+import { getSpaceContext } from "@/lib/space";
 
 export default async function DashboardPage() {
-  const user = await requireUser();
-  const stats = await getDashboardStats(user.id);
+  const space = await getSpaceContext();
+  const stats = await getDashboardStats(space.ownerId);
   const code = stats.display.code;
+  const greetName = space.isOwnSpace
+    ? space.user.name.split(" ")[0]
+    : space.ownerName.split(" ")[0];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-sans text-3xl font-medium tracking-tight">
-            Bonjour, {user.name?.split(" ")[0]}
+            Bonjour, {greetName}
           </h1>
           <p className="text-sm text-muted-foreground">
             Vue d&apos;ensemble en {code}
           </p>
         </div>
-        <Button render={<Link href="/transactions" />}>Nouvelle transaction</Button>
+        <Button render={<Link href="/transactions" />}>
+          Nouvelle transaction
+        </Button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -112,7 +117,8 @@ export default async function DashboardPage() {
                   {b.over && (
                     <p className="flex items-center gap-1 text-xs text-destructive">
                       <AlertTriangle className="size-3" />
-                      Budget dépassé ({periodLabel(b.period as "month" | "week" | "day")})
+                      Budget dépassé (
+                      {periodLabel(b.period as "month" | "week" | "day")})
                     </p>
                   )}
                 </div>
@@ -180,12 +186,16 @@ export default async function DashboardPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={tx.type === "income" ? "secondary" : "outline"}>
+                    <Badge
+                      variant={tx.type === "income" ? "secondary" : "outline"}
+                    >
                       {tx.type === "income" ? "Revenu" : "Dépense"}
                     </Badge>
                     <span
                       className={`tabular-nums font-medium ${
-                        tx.type === "income" ? "text-emerald-700" : "text-rose-700"
+                        tx.type === "income"
+                          ? "text-emerald-700"
+                          : "text-rose-700"
                       }`}
                     >
                       {tx.type === "income" ? "+" : "-"}

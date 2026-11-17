@@ -1,9 +1,9 @@
-import { requireUser } from "@/lib/session";
 import {
   getUserCategories,
   getUserCurrencies,
   getUserTransactions,
 } from "@/lib/queries";
+import { getSpaceContext } from "@/lib/space";
 import { TransactionsClient } from "@/components/transactions/transactions-client";
 
 export default async function TransactionsPage({
@@ -11,9 +11,9 @@ export default async function TransactionsPage({
 }: {
   searchParams: Promise<{ type?: string; categoryId?: string }>;
 }) {
-  const user = await requireUser();
+  const space = await getSpaceContext();
   const params = await searchParams;
-  const all = await getUserTransactions(user.id);
+  const all = await getUserTransactions(space.ownerId);
   const type =
     params.type === "income" || params.type === "expense"
       ? params.type
@@ -25,8 +25,8 @@ export default async function TransactionsPage({
     return true;
   });
 
-  const categories = await getUserCategories(user.id);
-  const currencies = await getUserCurrencies(user.id);
+  const categories = await getUserCategories(space.ownerId);
+  const currencies = await getUserCurrencies(space.ownerId);
 
   return (
     <TransactionsClient

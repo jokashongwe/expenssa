@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand/logo";
 import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
@@ -6,13 +7,10 @@ export default function LoginPage() {
     <div className="app-bg flex min-h-dvh items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl border border-border/70 bg-card/90 p-6 shadow-sm backdrop-blur md:p-8">
         <div className="mb-6">
-          <Link
-            href="/"
-            className="font-sans text-3xl font-medium text-teal-800"
-          >
-            Expenssa
+          <Link href="/" className="inline-block">
+            <BrandLogo size="md" priority />
           </Link>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             Connectez-vous à votre espace budget
           </p>
         </div>

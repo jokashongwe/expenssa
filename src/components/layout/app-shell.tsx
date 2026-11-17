@@ -9,9 +9,11 @@ import {
   PiggyBank,
   Wallet,
   Coins,
+  Users,
   Menu,
 } from "lucide-react";
 import { useState } from "react";
+import { BrandLogo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/layout/logout-button";
 import { cn } from "@/lib/utils";
@@ -30,6 +32,7 @@ const nav = [
   { href: "/budgets", label: "Budgets", icon: Wallet },
   { href: "/savings", label: "Épargne", icon: PiggyBank },
   { href: "/settings/currencies", label: "Devises", icon: Coins },
+  { href: "/settings/sharing", label: "Partage", icon: Users },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -74,12 +77,9 @@ export function AppShell({
     <div className="min-h-dvh app-bg">
       <div className="mx-auto flex min-h-dvh max-w-6xl">
         <aside className="hidden w-60 shrink-0 border-r border-border/60 bg-card/70 p-4 backdrop-blur md:flex md:flex-col">
-          <div className="mb-8 px-2">
+          <div className="mb-8 px-1">
             <Link href="/dashboard" className="block">
-              <p className="font-sans text-2xl font-medium tracking-tight text-teal-800">
-                Expenssa
-              </p>
-              <p className="text-xs text-muted-foreground">Gestion de budget</p>
+              <BrandLogo size="sm" priority />
             </Link>
           </div>
           <NavLinks />
@@ -103,9 +103,8 @@ export function AppShell({
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-4">
                 <SheetHeader className="mb-4 px-0 text-left">
-                  <SheetTitle className="font-sans text-teal-800">
-                    Expenssa
-                  </SheetTitle>
+                  <SheetTitle className="sr-only">Expenssa</SheetTitle>
+                  <BrandLogo size="sm" />
                 </SheetHeader>
                 <NavLinks onNavigate={() => setOpen(false)} />
                 <div className="mt-6">
@@ -113,9 +112,7 @@ export function AppShell({
                 </div>
               </SheetContent>
             </Sheet>
-            <p className="font-sans text-lg font-medium text-teal-800">
-              Expenssa
-            </p>
+            <BrandLogo size="sm" />
           </header>
           <main className="flex-1 p-4 md:p-8">{children}</main>
         </div>

@@ -4,6 +4,7 @@ import {
   integer,
   pgTable,
   text,
+  unique,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -88,6 +89,29 @@ export const savingsPlans = pgTable("savings_plans", {
   startDate: text("start_date").notNull(),
 });
 
+/**
+ * Partage d'espace : le membre voit/édite les données du propriétaire
+ * (transactions, budgets, etc. restent clés par owner.userId).
+ */
+export const spaceShares = pgTable(
+  "space_shares",
+  {
+    id: text("id").primaryKey(),
+    ownerUserId: text("owner_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    memberUserId: text("member_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role", { enum: ["editor"] }).notNull().default("editor"),
+    status: text("status", { enum: ["pending", "accepted"] })
+      .notNull()
+      .default("pending"),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [unique("space_shares_owner_member_unique").on(t.ownerUserId, t.memberUserId)]
+);
+
 /** Dépenses prévisionnelles à cocher sous un budget (simulation d'écarts). */
 export const budgetPlannedItems = pgTable("budget_planned_items", {
   id: text("id").primaryKey(),
@@ -109,3 +133,4 @@ export type Transaction = typeof transactions.$inferSelect;
 export type Budget = typeof budgets.$inferSelect;
 export type SavingsPlan = typeof savingsPlans.$inferSelect;
 export type BudgetPlannedItem = typeof budgetPlannedItems.$inferSelect;
+export type SpaceShare = typeof spaceShares.$inferSelect;
