@@ -88,9 +88,24 @@ export const savingsPlans = pgTable("savings_plans", {
   startDate: text("start_date").notNull(),
 });
 
+/** Dépenses prévisionnelles à cocher sous un budget (simulation d'écarts). */
+export const budgetPlannedItems = pgTable("budget_planned_items", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  budgetId: text("budget_id")
+    .notNull()
+    .references(() => budgets.id, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  amount: doublePrecision("amount").notNull(),
+  checked: boolean("checked").notNull().default(false),
+});
+
 export type User = typeof users.$inferSelect;
 export type Currency = typeof currencies.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type Budget = typeof budgets.$inferSelect;
 export type SavingsPlan = typeof savingsPlans.$inferSelect;
+export type BudgetPlannedItem = typeof budgetPlannedItems.$inferSelect;

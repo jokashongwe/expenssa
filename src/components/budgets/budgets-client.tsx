@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { ActionForm } from "@/components/forms/action-form";
 import { DeleteButton } from "@/components/delete-button";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -21,8 +23,20 @@ import {
   deleteBudgetAction,
   updateBudgetAction,
 } from "@/lib/actions/budgets";
+import {
+  createPlannedItemAction,
+  deletePlannedItemAction,
+  togglePlannedItemAction,
+} from "@/lib/actions/planned";
 import { formatMoney, periodLabel } from "@/lib/money";
 import type { Category, Currency } from "@/lib/db/schema";
+
+type PlannedItem = {
+  id: string;
+  label: string;
+  amount: number;
+  checked: boolean;
+};
 
 type BudgetRow = {
   id: string;
@@ -37,7 +51,156 @@ type BudgetRow = {
   spent: number;
   percent: number;
   over: boolean;
+  plannedItems: PlannedItem[];
+  plannedChecked: number;
+  remaining: number;
+  projected: number;
+  gap: number;
+  fitsWithPlanned: boolean;
 };
+
+function PlannedChecklist({
+  budget,
+}: {
+  budget: BudgetRow;
+}) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [adding, setAdding] = useState(false);
+
+  return (
+    <div className="space-y-3 border-t border-border/60 pt-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">Dépenses prévisionnelles</p>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setAdding((v) => !v)}
+        >
+          <Plus className="size-3.5" />
+          Ajouter
+        </Button>
+      </div>
+
+      {adding && (
+        <ActionForm
+          action={createPlannedItemAction}
+          className="grid gap-2 sm:grid-cols-[1fr_7rem_auto]"
+          onSuccess={() => {
+            setAdding(false);
+            router.refresh();
+          }}
+        >
+          <input type="hidden" name="budgetId" value={budget.id} />
+          <Input
+            name="label"
+            required
+            minLength={2}
+            placeholder="Ex. Loyer, courses, essence…"
+          />
+          <Input
+            name="amount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            required
+            placeholder="Montant"
+          />
+          <Button type="submit" size="sm">
+            OK
+          </Button>
+        </ActionForm>
+      )}
+
+      {budget.plannedItems.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          Cochez des préférences de dépenses pour simuler si le budget suffit.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {budget.plannedItems.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2"
+            >
+              <Checkbox
+                checked={item.checked}
+                disabled={pending}
+                onCheckedChange={(value) => {
+                  start(async () => {
+                    const res = await togglePlannedItemAction(
+                      item.id,
+                      value === true
+                    );
+                    if (res.error) toast.error(res.error);
+                    router.refresh();
+                  });
+                }}
+                aria-label={`Inclure ${item.label}`}
+              />
+              <span
+                className={`min-w-0 flex-1 text-sm ${
+                  item.checked ? "text-foreground" : "text-muted-foreground line-through"
+                }`}
+              >
+                {item.label}
+              </span>
+              <span className="tabular-nums text-sm font-medium">
+                {formatMoney(item.amount, budget.currencyCode)}
+              </span>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                disabled={pending}
+                aria-label="Supprimer"
+                onClick={() => {
+                  start(async () => {
+                    const res = await deletePlannedItemAction(item.id);
+                    if (res.error) toast.error(res.error);
+                    else if (res.success) toast.success(res.success);
+                    router.refresh();
+                  });
+                }}
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="grid gap-1 rounded-lg bg-teal-50/80 px-3 py-2 text-xs text-teal-950 sm:grid-cols-3">
+        <p>
+          Prévisionnel coché :{" "}
+          <strong className="tabular-nums">
+            {formatMoney(budget.plannedChecked, budget.currencyCode)}
+          </strong>
+        </p>
+        <p>
+          Projection (réel + prévu) :{" "}
+          <strong className="tabular-nums">
+            {formatMoney(budget.projected, budget.currencyCode)}
+          </strong>
+        </p>
+        <p>
+          Écart vs plafond :{" "}
+          <strong
+            className={`tabular-nums ${
+              budget.fitsWithPlanned ? "text-emerald-700" : "text-destructive"
+            }`}
+          >
+            {budget.gap >= 0 ? "+" : ""}
+            {formatMoney(budget.gap, budget.currencyCode)}
+          </strong>
+          {!budget.fitsWithPlanned && " (insuffisant)"}
+          {budget.fitsWithPlanned && budget.plannedChecked > 0 && " (tient)"}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export function BudgetsClient({
   budgets,
@@ -60,7 +223,7 @@ export function BudgetsClient({
         <div>
           <h1 className="font-sans text-3xl font-medium">Budgets</h1>
           <p className="text-sm text-muted-foreground">
-            Plafonds par catégorie et périodicité
+            Plafonds, dépenses réelles et prévisions à cocher
           </p>
         </div>
         <Dialog
@@ -214,9 +377,12 @@ export function BudgetsClient({
                 </div>
               </div>
               <Progress value={b.percent} />
-              <div className="flex justify-between text-sm">
+              <div className="flex flex-wrap justify-between gap-2 text-sm">
                 <span className="tabular-nums text-muted-foreground">
                   Dépensé : {formatMoney(b.spent, b.currencyCode)}
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  Reste : {formatMoney(b.remaining, b.currencyCode)}
                 </span>
                 {b.over ? (
                   <span className="font-medium text-destructive">Dépassé</span>
@@ -226,6 +392,7 @@ export function BudgetsClient({
                   </span>
                 )}
               </div>
+              <PlannedChecklist budget={b} />
             </div>
           ))
         )}

@@ -1,6 +1,7 @@
 import { and, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+  budgetPlannedItems,
   budgets,
   categories,
   currencies,
@@ -234,6 +235,11 @@ export async function getBudgetDetails(userId: string) {
     .innerJoin(currencies, eq(budgets.currencyId, currencies.id))
     .where(eq(budgets.userId, userId));
 
+  const planned = await db
+    .select()
+    .from(budgetPlannedItems)
+    .where(eq(budgetPlannedItems.userId, userId));
+
   return rows.map((b) => {
     const range = periodRange(b.period as Period);
     const spentNative = txs
@@ -254,12 +260,35 @@ export async function getBudgetDetails(userId: string) {
           ),
         0
       );
+
+    const items = planned
+      .filter((p) => p.budgetId === b.id)
+      .map((p) => ({
+        id: p.id,
+        label: p.label,
+        amount: p.amount,
+        checked: p.checked,
+      }));
+
+    const plannedChecked = items
+      .filter((i) => i.checked)
+      .reduce((sum, i) => sum + i.amount, 0);
+    const remaining = b.amount - spentNative;
+    const projected = spentNative + plannedChecked;
+    const gap = b.amount - projected;
+
     return {
       ...b,
       spent: spentNative,
       percent: b.amount > 0 ? Math.min(100, (spentNative / b.amount) * 100) : 0,
       over: spentNative > b.amount,
       displayCode: display.code,
+      plannedItems: items,
+      plannedChecked,
+      remaining,
+      projected,
+      gap,
+      fitsWithPlanned: gap >= 0,
     };
   });
 }

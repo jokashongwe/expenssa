@@ -67,3 +67,15 @@ CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_budgets_user ON budgets(user_id);
 CREATE INDEX IF NOT EXISTS idx_savings_user ON savings_plans(user_id);
+
+CREATE TABLE IF NOT EXISTS budget_planned_items (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  budget_id TEXT NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  amount DOUBLE PRECISION NOT NULL,
+  checked BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_planned_budget ON budget_planned_items(budget_id);
+CREATE INDEX IF NOT EXISTS idx_planned_user ON budget_planned_items(user_id);

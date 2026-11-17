@@ -9,12 +9,11 @@ import {
   PiggyBank,
   Wallet,
   Coins,
-  LogOut,
   Menu,
 } from "lucide-react";
 import { useState } from "react";
-import { logoutAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
+import { LogoutButton } from "@/components/layout/logout-button";
 import { cn } from "@/lib/utils";
 import {
   Sheet,
@@ -88,16 +87,7 @@ export function AppShell({
             <p className="truncate px-2 text-sm text-muted-foreground">
               {userName}
             </p>
-            <form action={logoutAction}>
-              <Button
-                type="submit"
-                variant="ghost"
-                className="w-full justify-start gap-2"
-              >
-                <LogOut className="size-4" />
-                Déconnexion
-              </Button>
-            </form>
+            <LogoutButton />
           </div>
         </aside>
 
@@ -118,16 +108,9 @@ export function AppShell({
                   </SheetTitle>
                 </SheetHeader>
                 <NavLinks onNavigate={() => setOpen(false)} />
-                <form action={logoutAction} className="mt-6">
-                  <Button
-                    type="submit"
-                    variant="ghost"
-                    className="w-full justify-start gap-2"
-                  >
-                    <LogOut className="size-4" />
-                    Déconnexion
-                  </Button>
-                </form>
+                <div className="mt-6">
+                  <LogoutButton />
+                </div>
               </SheetContent>
             </Sheet>
             <p className="font-sans text-lg font-medium text-teal-800">

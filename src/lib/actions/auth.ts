@@ -3,6 +3,7 @@
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { AuthError } from "next-auth";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { signIn, signOut } from "@/lib/auth";
@@ -99,6 +100,34 @@ export async function loginAction(
   redirect("/dashboard");
 }
 
-export async function logoutAction() {
-  await signOut({ redirectTo: "/login" });
+async function clearAuthCookies() {
+  const jar = await cookies();
+  const names = [
+    "authjs.session-token",
+    "__Secure-authjs.session-token",
+    "authjs.callback-url",
+    "__Secure-authjs.callback-url",
+    "authjs.csrf-token",
+    "__Host-authjs.csrf-token",
+    "next-auth.session-token",
+    "__Secure-next-auth.session-token",
+  ];
+  for (const name of names) {
+    try {
+      jar.set(name, "", { expires: new Date(0), path: "/", maxAge: 0 });
+      jar.delete(name);
+    } catch {
+      // ignore cookies not present / not deletable in this context
+    }
+  }
+}
+
+export async function logoutAction(): Promise<ActionState> {
+  try {
+    await signOut({ redirect: false });
+  } catch {
+    // continue — on force le nettoyage des cookies
+  }
+  await clearAuthCookies();
+  return { success: "Déconnecté" };
 }
