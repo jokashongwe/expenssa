@@ -2,9 +2,9 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const sizes = {
-  sm: { height: 32, width: 140 },
-  md: { height: 48, width: 210 },
-  lg: { height: 72, width: 320 },
+  sm: { height: 64, width: 210 },
+  md: { height: 72, width: 320 },
+  lg: { height: 96, width: 480 },
 } as const;
 
 export function BrandLogo({
