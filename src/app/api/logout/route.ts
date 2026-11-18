@@ -1,48 +1,54 @@
 import { NextResponse } from "next/server";
-import { signOut } from "@/lib/auth";
 
-const COOKIE_NAMES = [
-  "authjs.session-token",
-  "__Secure-authjs.session-token",
-  "authjs.callback-url",
-  "__Secure-authjs.callback-url",
-  "authjs.csrf-token",
-  "__Host-authjs.csrf-token",
-  "next-auth.session-token",
-  "__Secure-next-auth.session-token",
-];
+// Préfixes des cookies Auth.js / NextAuth (y compris versions __Secure-/__Host-
+// et cookies fragmentés « .0 », « .1 »… quand le JWT est volumineux).
+const AUTH_COOKIE_PATTERN =
+  /^(__Secure-|__Host-)?(authjs|next-auth)\.(session-token|callback-url|csrf-token|pkce\.code_verifier|state|nonce)(\.\d+)?$/;
 
-export async function POST(request: Request) {
-  try {
-    await signOut({ redirect: false });
-  } catch {
-    // continue — cookies are cleared below
+const EXTRA_COOKIES = ["expenssa_active_owner"];
+
+function redirectToLogin(request: Request) {
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const isHttps =
+    forwardedProto === "https" || new URL(request.url).protocol === "https:";
+
+  const response = NextResponse.redirect(new URL("/login", request.url), 303);
+  response.headers.set("Cache-Control", "no-store");
+
+  const names = new Set<string>(EXTRA_COOKIES);
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  for (const part of cookieHeader.split(";")) {
+    const name = part.split("=")[0]?.trim();
+    if (name && AUTH_COOKIE_PATTERN.test(name)) names.add(name);
   }
+  // Noms connus même s'ils ne sont pas présents dans la requête
+  names.add("authjs.session-token");
+  names.add("__Secure-authjs.session-token");
 
-  const url = new URL("/login", request.url);
-  const response = NextResponse.redirect(url, 303);
-
-  for (const name of COOKIE_NAMES) {
+  for (const name of names) {
+    // Les cookies préfixés __Secure-/__Host- ne sont acceptés (et donc
+    // supprimés) par le navigateur que s'ils portent l'attribut Secure.
+    const needsSecure =
+      name.startsWith("__Secure-") || name.startsWith("__Host-") || isHttps;
     response.cookies.set(name, "", {
       path: "/",
       maxAge: 0,
       expires: new Date(0),
       httpOnly: true,
       sameSite: "lax",
+      secure: needsSecure,
     });
-    response.cookies.delete(name);
   }
-
-  // Also clear active shared-space cookie
-  response.cookies.set("expenssa_active_owner", "", {
-    path: "/",
-    maxAge: 0,
-    expires: new Date(0),
-  });
 
   return response;
 }
 
+export async function POST(request: Request) {
+  // Auth.js utilise une session JWT sans état serveur : supprimer les cookies
+  // suffit. On évite signOut() qui écrivait des cookies concurrents.
+  return redirectToLogin(request);
+}
+
 export async function GET(request: Request) {
-  return POST(request);
+  return redirectToLogin(request);
 }
