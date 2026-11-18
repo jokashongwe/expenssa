@@ -3,18 +3,13 @@
   "short_name": "Expenssa",
   "description": "Gérez votre budget, maîtrisez vos dépenses",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f0fdfa",
   "theme_color": "#0f766e",
   "lang": "fr",
   "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "/logo-expenssa-final.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
@@ -25,7 +20,13 @@
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

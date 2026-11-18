@@ -1,4 +1,4 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, ilike, lte, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   budgetPlannedItems,
@@ -74,9 +74,89 @@ export async function getUserTransactions(userId: string) {
   return rows.sort((a, b) => b.date.localeCompare(a.date));
 }
 
-export async function getDashboardStats(userId: string) {
+export type TransactionSort = "date_desc" | "date_asc" | "amount_desc";
+
+export type TransactionFilters = {
+  type?: "income" | "expense";
+  categoryId?: string;
+  /** Mois au format AAAA-MM */
+  month?: string;
+  q?: string;
+  sort?: TransactionSort;
+  limit?: number;
+};
+
+/** Transactions filtrées en SQL, triées et tronquées (« voir plus » via limit). */
+export async function getTransactionsPage(
+  userId: string,
+  f: TransactionFilters
+) {
+  const conditions = [eq(transactions.userId, userId)];
+  if (f.type) conditions.push(eq(transactions.type, f.type));
+  if (f.categoryId) conditions.push(eq(transactions.categoryId, f.categoryId));
+  if (f.month && /^\d{4}-\d{2}$/.test(f.month)) {
+    conditions.push(gte(transactions.date, `${f.month}-01`));
+    conditions.push(lte(transactions.date, `${f.month}-31`));
+  }
+  const q = f.q?.trim().slice(0, 100);
+  if (q) {
+    const pattern = `%${q.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
+    conditions.push(
+      or(ilike(transactions.note, pattern), ilike(categories.name, pattern))!
+    );
+  }
+
+  const rows = await db
+    .select({
+      id: transactions.id,
+      type: transactions.type,
+      amount: transactions.amount,
+      note: transactions.note,
+      date: transactions.date,
+      categoryId: transactions.categoryId,
+      currencyId: transactions.currencyId,
+      categoryName: categories.name,
+      categoryColor: categories.color,
+      currencyCode: currencies.code,
+      rateToUsd: currencies.rateToUsd,
+    })
+    .from(transactions)
+    .innerJoin(categories, eq(transactions.categoryId, categories.id))
+    .innerJoin(currencies, eq(transactions.currencyId, currencies.id))
+    .where(and(...conditions));
+
+  const sort = f.sort ?? "date_desc";
+  const usd = (r: (typeof rows)[number]) =>
+    r.rateToUsd > 0 ? r.amount / r.rateToUsd : r.amount;
+  rows.sort((a, b) =>
+    sort === "date_asc"
+      ? a.date.localeCompare(b.date)
+      : sort === "amount_desc"
+        ? usd(b) - usd(a)
+        : b.date.localeCompare(a.date)
+  );
+
+  const limit = Math.min(Math.max(f.limit ?? 30, 1), 500);
+  return {
+    rows: rows.slice(0, limit),
+    total: rows.length,
+    hasMore: rows.length > limit,
+  };
+}
+
+/** Mois de référence (AAAA-MM) → date au 1er du mois ; mois courant par défaut. */
+export function parseMonthParam(value?: string): Date {
+  if (value && /^\d{4}-(0[1-9]|1[0-2])$/.test(value)) {
+    return new Date(`${value}-01T00:00:00`);
+  }
+  return new Date();
+}
+
+export async function getDashboardStats(userId: string, reference = new Date()) {
   const display = await getDisplayCurrency(userId);
-  const month = periodRange("month");
+  const month = periodRange("month", reference);
+  const prevRef = new Date(reference.getFullYear(), reference.getMonth() - 1, 1);
+  const prevMonth = periodRange("month", prevRef);
   const txs = await getUserTransactions(userId);
 
   let income = 0;
@@ -92,8 +172,10 @@ export async function getDashboardStats(userId: string) {
       { rateToUsd: tx.rateToUsd },
       display
     );
-    if (tx.type === "income") income += converted;
-    else expense += converted;
+    if (tx.date <= month.end) {
+      if (tx.type === "income") income += converted;
+      else expense += converted;
+    }
 
     if (tx.type === "expense" && tx.date >= month.start && tx.date <= month.end) {
       if (!byCategory[tx.categoryId]) {
@@ -112,6 +194,34 @@ export async function getDashboardStats(userId: string) {
   );
   let monthIncome = 0;
   let monthExpense = 0;
+  let prevIncome = 0;
+  let prevExpense = 0;
+  for (const tx of txs) {
+    if (tx.date < prevMonth.start || tx.date > prevMonth.end) continue;
+    const converted = toDisplayAmount(
+      tx.amount,
+      { rateToUsd: tx.rateToUsd },
+      display
+    );
+    if (tx.type === "income") prevIncome += converted;
+    else prevExpense += converted;
+  }
+
+  // Tendance : 6 derniers mois jusqu'au mois sélectionné
+  const trend = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(reference.getFullYear(), reference.getMonth() - (5 - i), 1);
+    const r = periodRange("month", d);
+    let inc = 0;
+    let exp = 0;
+    for (const tx of txs) {
+      if (tx.date < r.start || tx.date > r.end) continue;
+      const c = toDisplayAmount(tx.amount, { rateToUsd: tx.rateToUsd }, display);
+      if (tx.type === "income") inc += c;
+      else exp += c;
+    }
+    return { month: r.start.slice(0, 7), income: inc, expense: exp };
+  });
+
   for (const tx of monthTxs) {
     const converted = toDisplayAmount(
       tx.amount,
@@ -140,7 +250,7 @@ export async function getDashboardStats(userId: string) {
     .where(eq(budgets.userId, userId));
 
   const budgetProgress = budgetRows.map((b) => {
-    const range = periodRange(b.period as Period);
+    const range = periodRange(b.period as Period, reference);
     const spent = txs
       .filter(
         (t) =>
@@ -165,6 +275,7 @@ export async function getDashboardStats(userId: string) {
       spent,
       limit,
       percent: limit > 0 ? Math.min(100, (spent / limit) * 100) : 0,
+      rawPercent: limit > 0 ? (spent / limit) * 100 : 0,
       over: spent > limit,
     };
   });
@@ -189,9 +300,12 @@ export async function getDashboardStats(userId: string) {
     balance: income - expense,
     monthIncome,
     monthExpense,
+    prevIncome,
+    prevExpense,
+    trend,
     topCategories: Object.values(byCategory)
       .sort((a, b) => b.total - a.total)
-      .slice(0, 5),
+      .slice(0, 6),
     budgetProgress,
     plans: plans.map((p) => ({
       ...p,

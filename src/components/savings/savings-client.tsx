@@ -1,5 +1,7 @@
 "use client";
 
+import { EmptyState } from "@/components/empty-state";
+import { PiggyBank } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
@@ -139,8 +141,9 @@ export function SavingsClient({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Devise</Label>
+                  <Label htmlFor="sv-currency">Devise</Label>
                   <select
+                    id="sv-currency"
                     name="currencyId"
                     required
                     defaultValue={
@@ -158,8 +161,9 @@ export function SavingsClient({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Périodicité</Label>
+                  <Label htmlFor="sv-periodicity">Périodicité</Label>
                   <select
+                    id="sv-periodicity"
                     name="periodicity"
                     required
                     defaultValue={editing?.periodicity ?? "month"}
@@ -196,7 +200,7 @@ export function SavingsClient({
                 />
               </div>
               {suggestion != null && (
-                <p className="rounded-lg bg-teal-50 px-3 py-2 text-sm text-teal-900">
+                <p className="rounded-lg bg-tint px-3 py-2 text-sm text-tint-foreground">
                   Contribution suggérée :{" "}
                   <strong>
                     {suggestion.toLocaleString("fr-FR", {
@@ -251,9 +255,7 @@ export function SavingsClient({
 
       <div className="space-y-3">
         {plans.length === 0 ? (
-          <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            Créez un plan d&apos;épargne avec un montant et une durée.
-          </p>
+          <EmptyState icon={PiggyBank} title="Aucun plan d'épargne" description="Créez un plan avec un montant et une durée." />
         ) : (
           plans.map((p) => {
             const percent =
@@ -281,7 +283,7 @@ export function SavingsClient({
                         true
                       )}
                     </p>
-                    <p className="mt-1 text-xs text-teal-800">
+                    <p className="mt-1 text-xs text-tint-foreground">
                       ≈ {formatMoney(perPeriod, p.currencyCode)} /{" "}
                       {periodLabel(p.periodicity as "month" | "week" | "day")}
                     </p>
@@ -301,10 +303,15 @@ export function SavingsClient({
                         setTarget(String(p.targetAmount));
                         setDuration(String(p.durationUnits));
                       }}
+                      aria-label={`Modifier le plan ${p.name}`}
                     >
                       Modifier
                     </Button>
-                    <DeleteButton action={() => deleteSavingsPlanAction(p.id)} />
+                    <DeleteButton
+                      ariaLabel={`Supprimer le plan ${p.name}`}
+                      confirmMessage={`Supprimer le plan « ${p.name} » ?`}
+                      action={() => deleteSavingsPlanAction(p.id)}
+                    />
                   </div>
                 </div>
                 <Progress value={percent} />

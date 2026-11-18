@@ -1,5 +1,7 @@
 "use client";
 
+import { EmptyState } from "@/components/empty-state";
+import { Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -104,7 +106,7 @@ export function SharingClient({
       </section>
 
       {incoming.length > 0 && (
-        <section className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/80 p-4">
+        <section className="space-y-3 rounded-xl border border-warning-border bg-warning text-warning-foreground p-4">
           <h2 className="font-medium">Invitations reçues</h2>
           {incoming.map((inv) => (
             <div
@@ -160,9 +162,7 @@ export function SharingClient({
       <section className="space-y-3 rounded-xl border border-border/70 bg-card/80 p-4">
         <h2 className="font-medium">Personnes ayant accès à mon espace</h2>
         {outgoing.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Aucun partage pour l&apos;instant.
-          </p>
+          <EmptyState bordered={false} icon={Users} title="Aucun partage pour l'instant" description="Invitez une personne pour lui donner accès à votre espace." />
         ) : (
           <ul className="space-y-2">
             {outgoing.map((row) => (

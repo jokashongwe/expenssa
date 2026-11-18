@@ -20,6 +20,8 @@ const registerSchema = z.object({
 export type ActionState = {
   error?: string;
   success?: string;
+  /** Nom du champ en erreur (attribut name de l'input). */
+  field?: string;
 };
 
 export async function registerAction(
@@ -33,7 +35,11 @@ export async function registerAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Données invalides" };
+    const issue = parsed.error.issues[0];
+    return {
+      error: issue?.message ?? "Données invalides",
+      field: typeof issue?.path[0] === "string" ? issue.path[0] : undefined,
+    };
   }
 
   const email = parsed.data.email.toLowerCase().trim();

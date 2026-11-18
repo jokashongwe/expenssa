@@ -15,7 +15,7 @@ export default function OfflinePage() {
         </p>
         <Link
           href="/dashboard"
-          className="mt-6 inline-block text-sm font-medium text-teal-700 underline"
+          className="mt-6 inline-block text-sm font-medium text-primary underline"
         >
           Réessayer
         </Link>

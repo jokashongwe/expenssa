@@ -145,7 +145,7 @@ export function CurrenciesClient({
                 <p className="font-medium">{c.code}</p>
                 <p className="text-sm text-muted-foreground">{c.name}</p>
                 {c.code === displayCode && (
-                  <Badge className="bg-teal-700 text-white">Affichage</Badge>
+                  <Badge className="bg-primary text-primary-foreground">Affichage</Badge>
                 )}
                 {c.isDefault && <Badge variant="outline">Défaut</Badge>}
               </div>
@@ -175,11 +175,20 @@ export function CurrenciesClient({
                   Afficher en {c.code}
                 </Button>
               )}
-              <Button size="sm" variant="outline" onClick={() => setEditing(c)}>
+              <Button
+                size="sm"
+                variant="outline"
+                aria-label={`Modifier la devise ${c.code}`}
+                onClick={() => setEditing(c)}
+              >
                 Modifier
               </Button>
               {c.code !== "USD" && (
-                <DeleteButton action={() => deleteCurrencyAction(c.id)} />
+                <DeleteButton
+                  ariaLabel={`Supprimer la devise ${c.code}`}
+                  confirmMessage={`Supprimer la devise ${c.code} ?`}
+                  action={() => deleteCurrencyAction(c.id)}
+                />
               )}
             </div>
           </div>

@@ -24,7 +24,11 @@ export function BrandLogo({
       height={dim.height}
       width={dim.width}
       priority={priority}
-      className={cn("h-auto w-auto object-contain object-left", className)}
+      className={cn(
+        // Le logo a du texte vert foncé : pastille claire en mode sombre
+        "h-auto w-auto object-contain object-left dark:rounded-xl dark:bg-white/95 dark:px-2",
+        className
+      )}
       style={{ height: dim.height, width: "auto" }}
     />
   );

@@ -17,7 +17,7 @@ export default function RegisterPage() {
         <RegisterForm />
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Déjà inscrit ?{" "}
-          <Link href="/login" className="font-medium text-teal-700 underline">
+          <Link href="/login" className="font-medium text-primary underline">
             Se connecter
           </Link>
         </p>

@@ -23,6 +23,17 @@ import {
 } from "@/lib/actions/categories";
 import type { Category } from "@/lib/db/schema";
 
+const COLOR_NAMES: Record<string, string> = {
+  "#0d9488": "Turquoise",
+  "#059669": "Vert",
+  "#f59e0b": "Orange",
+  "#3b82f6": "Bleu",
+  "#8b5cf6": "Violet",
+  "#ec4899": "Rose",
+  "#ef4444": "Rouge",
+  "#64748b": "Gris",
+};
+
 const COLORS = [
   "#0d9488",
   "#059669",
@@ -92,8 +103,9 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Type</Label>
+                <Label htmlFor="cat-type">Type</Label>
                 <select
+                  id="cat-type"
                   name="type"
                   required
                   defaultValue={editing?.type ?? "expense"}
@@ -104,10 +116,15 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>Couleur</Label>
-                <div className="flex flex-wrap gap-2">
+                <Label id="cat-color-label">Couleur</Label>
+                <div
+                  role="radiogroup"
+                  aria-labelledby="cat-color-label"
+                  className="flex flex-wrap gap-2"
+                >
                   {COLORS.map((color) => (
                     <label key={color} className="cursor-pointer">
+                      <span className="sr-only">{COLOR_NAMES[color]}</span>
                       <input
                         type="radio"
                         name="color"
@@ -118,7 +135,7 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
                         className="peer sr-only"
                       />
                       <span
-                        className="block size-7 rounded-full ring-offset-2 peer-checked:ring-2 peer-checked:ring-teal-700"
+                        className="block size-7 rounded-full ring-offset-2 peer-checked:ring-2 peer-checked:ring-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring"
                         style={{ background: color }}
                       />
                     </label>
@@ -144,6 +161,7 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
               <span
                 className="size-3 rounded-full"
                 style={{ background: cat.color }}
+                aria-hidden
               />
               <div>
                 <p className="font-medium">{cat.name}</p>
@@ -153,10 +171,19 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setEditing(cat)}>
+              <Button
+                size="sm"
+                variant="outline"
+                aria-label={`Modifier la catégorie ${cat.name}`}
+                onClick={() => setEditing(cat)}
+              >
                 Modifier
               </Button>
-              <DeleteButton action={() => deleteCategoryAction(cat.id)} />
+              <DeleteButton
+                ariaLabel={`Supprimer la catégorie ${cat.name}`}
+                confirmMessage={`Supprimer la catégorie « ${cat.name} » ?`}
+                action={() => deleteCategoryAction(cat.id)}
+              />
             </div>
           </div>
         ))}

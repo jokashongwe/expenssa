@@ -1,5 +1,7 @@
 "use client";
 
+import { EmptyState } from "@/components/empty-state";
+import { Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -149,29 +151,19 @@ function PlannedChecklist({
               <span className="tabular-nums text-sm font-medium">
                 {formatMoney(item.amount, budget.currencyCode)}
               </span>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                disabled={pending}
-                aria-label="Supprimer"
-                onClick={() => {
-                  start(async () => {
-                    const res = await deletePlannedItemAction(item.id);
-                    if (res.error) toast.error(res.error);
-                    else if (res.success) toast.success(res.success);
-                    router.refresh();
-                  });
-                }}
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
+              <DeleteButton
+                label={`Supprimer ${item.label}`}
+                confirmMessage={`Supprimer « ${item.label} » du prévisionnel ?`}
+                icon={<Trash2 className="size-3.5" />}
+                action={() => deletePlannedItemAction(item.id)}
+                onDone={() => router.refresh()}
+              />
             </li>
           ))}
         </ul>
       )}
 
-      <div className="grid gap-1 rounded-lg bg-teal-50/80 px-3 py-2 text-xs text-teal-950 sm:grid-cols-3">
+      <div className="grid gap-1 rounded-lg bg-tint px-3 py-2 text-xs text-tint-foreground sm:grid-cols-3">
         <p>
           Prévisionnel coché :{" "}
           <strong className="tabular-nums">
@@ -188,7 +180,7 @@ function PlannedChecklist({
           Écart vs plafond :{" "}
           <strong
             className={`tabular-nums ${
-              budget.fitsWithPlanned ? "text-emerald-700" : "text-destructive"
+              budget.fitsWithPlanned ? "text-income" : "text-destructive"
             }`}
           >
             {budget.gap >= 0 ? "+" : ""}
@@ -260,8 +252,9 @@ export function BudgetsClient({
             >
               {editing && <input type="hidden" name="id" value={editing.id} />}
               <div className="space-y-2">
-                <Label>Catégorie</Label>
+                <Label htmlFor="bg-category">Catégorie</Label>
                 <select
+                  id="bg-category"
                   name="categoryId"
                   required
                   defaultValue={editing?.categoryId ?? ""}
@@ -291,8 +284,9 @@ export function BudgetsClient({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Devise</Label>
+                  <Label htmlFor="bg-currency">Devise</Label>
                   <select
+                    id="bg-currency"
                     name="currencyId"
                     required
                     defaultValue={
@@ -310,8 +304,9 @@ export function BudgetsClient({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Période</Label>
+                  <Label htmlFor="bg-period">Période</Label>
                   <select
+                    id="bg-period"
                     name="period"
                     required
                     defaultValue={editing?.period ?? "month"}
@@ -346,9 +341,7 @@ export function BudgetsClient({
 
       <div className="space-y-3">
         {budgets.length === 0 ? (
-          <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            Définissez un budget pour suivre vos dépenses.
-          </p>
+          <EmptyState icon={Wallet} title="Aucun budget" description="Définissez un budget pour suivre vos dépenses." />
         ) : (
           budgets.map((b) => (
             <div
@@ -361,6 +354,7 @@ export function BudgetsClient({
                     <span
                       className="size-2.5 rounded-full"
                       style={{ background: b.categoryColor }}
+                      aria-hidden
                     />
                     <p className="font-medium">{b.categoryName}</p>
                   </div>
@@ -370,10 +364,19 @@ export function BudgetsClient({
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setEditing(b)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    aria-label={`Modifier le budget ${b.categoryName}`}
+                    onClick={() => setEditing(b)}
+                  >
                     Modifier
                   </Button>
-                  <DeleteButton action={() => deleteBudgetAction(b.id)} />
+                  <DeleteButton
+                    ariaLabel={`Supprimer le budget ${b.categoryName}`}
+                    confirmMessage={`Supprimer le budget « ${b.categoryName} » ?`}
+                    action={() => deleteBudgetAction(b.id)}
+                  />
                 </div>
               </div>
               <Progress value={b.percent} />

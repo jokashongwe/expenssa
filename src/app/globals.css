@@ -12,6 +12,14 @@
   --font-heading: var(--font-roboto), "Roboto", "Helvetica Neue", Arial, sans-serif;
   /* Roboto n'a pas de 600 officiel → semibold = medium pour éviter le faux gras */
   --font-weight-semibold: 500;
+  --color-income: var(--income);
+  --color-expense: var(--expense);
+  --color-tint: var(--tint);
+  --color-tint-foreground: var(--tint-foreground);
+  --color-tint-border: var(--tint-border);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-border: var(--warning-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -75,6 +83,17 @@
   --chart-4: oklch(0.6 0.15 25);
   --chart-5: oklch(0.5 0.1 320);
   --radius: 0.7rem;
+  --income: oklch(0.45 0.12 160);
+  --expense: oklch(0.5 0.17 15);
+  --tint: oklch(0.97 0.02 175);
+  --tint-foreground: oklch(0.25 0.05 175);
+  --tint-border: oklch(0.9 0.04 175);
+  --warning: oklch(0.97 0.04 85);
+  --warning-foreground: oklch(0.35 0.08 70);
+  --warning-border: oklch(0.88 0.08 85);
+  --app-glow-1: oklch(0.9 0.05 175 / 0.55);
+  --app-glow-2: oklch(0.92 0.04 145 / 0.4);
+  --app-fade: oklch(0.97 0.02 175 / 0.8);
   --sidebar: oklch(0.97 0.015 175);
   --sidebar-foreground: oklch(0.22 0.03 175);
   --sidebar-primary: oklch(0.48 0.1 175);
@@ -83,6 +102,52 @@
   --sidebar-accent-foreground: oklch(0.28 0.05 175);
   --sidebar-border: oklch(0.88 0.02 175);
   --sidebar-ring: oklch(0.55 0.09 175);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.19 0.02 175);
+  --foreground: oklch(0.95 0.01 175);
+  --card: oklch(0.23 0.02 175);
+  --card-foreground: oklch(0.95 0.01 175);
+  --popover: oklch(0.25 0.02 175);
+  --popover-foreground: oklch(0.95 0.01 175);
+  --primary: oklch(0.7 0.11 175);
+  --primary-foreground: oklch(0.18 0.03 175);
+  --secondary: oklch(0.3 0.02 175);
+  --secondary-foreground: oklch(0.93 0.01 175);
+  --muted: oklch(0.28 0.02 175);
+  --muted-foreground: oklch(0.72 0.03 175);
+  --accent: oklch(0.32 0.03 175);
+  --accent-foreground: oklch(0.95 0.01 175);
+  --destructive: oklch(0.68 0.19 25);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.65 0.09 175);
+  --chart-1: oklch(0.72 0.12 175);
+  --chart-2: oklch(0.78 0.12 85);
+  --chart-3: oklch(0.7 0.13 250);
+  --chart-4: oklch(0.72 0.15 25);
+  --chart-5: oklch(0.7 0.12 320);
+  --income: oklch(0.78 0.14 160);
+  --expense: oklch(0.75 0.15 15);
+  --tint: oklch(0.28 0.04 175);
+  --tint-foreground: oklch(0.92 0.03 175);
+  --tint-border: oklch(0.38 0.05 175);
+  --warning: oklch(0.3 0.05 85);
+  --warning-foreground: oklch(0.9 0.06 85);
+  --warning-border: oklch(0.45 0.08 85);
+  --app-glow-1: oklch(0.35 0.06 175 / 0.45);
+  --app-glow-2: oklch(0.3 0.05 145 / 0.3);
+  --app-fade: oklch(0.2 0.02 175 / 0.8);
+  --sidebar: oklch(0.22 0.02 175);
+  --sidebar-foreground: oklch(0.95 0.01 175);
+  --sidebar-primary: oklch(0.7 0.11 175);
+  --sidebar-primary-foreground: oklch(0.18 0.03 175);
+  --sidebar-accent: oklch(0.32 0.03 175);
+  --sidebar-accent-foreground: oklch(0.95 0.01 175);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.65 0.09 175);
 }
 
 @layer base {
@@ -110,9 +175,9 @@
 .app-bg {
   background-color: var(--background);
   background-image:
-    radial-gradient(ellipse 80% 50% at 10% -10%, oklch(0.9 0.05 175 / 0.55), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, oklch(0.92 0.04 145 / 0.4), transparent),
-    linear-gradient(180deg, transparent, oklch(0.97 0.02 175 / 0.8));
+    radial-gradient(ellipse 80% 50% at 10% -10%, var(--app-glow-1), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, var(--app-glow-2), transparent),
+    linear-gradient(180deg, transparent, var(--app-fade));
 }
 
 /* Alias legacy : même famille/poids que le reste de l'UI */
