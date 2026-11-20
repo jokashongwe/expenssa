@@ -45,7 +45,7 @@ export function CurrenciesClient({
         <div>
           <h1 className="font-sans text-3xl font-medium">Devises</h1>
           <p className="text-sm text-muted-foreground">
-            USD par défaut. Ajoutez CDF ou d&apos;autres devises manuellement.
+            Dollar par défaut. Ajoutez le franc congolais (CDF) ou une autre devise.
           </p>
         </div>
         <Dialog
@@ -138,7 +138,7 @@ export function CurrenciesClient({
         {currencies.map((c) => (
           <div
             key={c.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card/80 px-4 py-3"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card shadow-sm px-4 py-3"
           >
             <div>
               <div className="flex items-center gap-2">

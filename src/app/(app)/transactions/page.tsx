@@ -63,7 +63,10 @@ export default async function TransactionsPage({
       categories={categories}
       currencies={currencies}
       filters={{ type, categoryId, month, q, sort }}
-      openNew={params.new === "1"}
+      openNew={
+        params.new === "1" || params.new === "income" || params.new === "expense"
+      }
+      newType={params.new === "income" ? "income" : "expense"}
     />
   );
 }

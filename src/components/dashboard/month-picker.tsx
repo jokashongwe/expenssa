@@ -13,13 +13,15 @@ export function MonthPicker({
   month,
   currentMonth,
   label,
+  basePath = "/dashboard",
 }: {
   month: string;
   currentMonth: string;
   label: string;
+  basePath?: string;
 }) {
   const href = (ym: string) =>
-    ym === currentMonth ? "/dashboard" : `/dashboard?month=${ym}`;
+    ym === currentMonth ? basePath : `${basePath}?month=${ym}`;
   const isCurrent = month === currentMonth;
   return (
     <div className="flex items-center gap-1" role="group" aria-label="Période">
@@ -46,7 +48,7 @@ export function MonthPicker({
         <ChevronRight className="size-4" />
       </Button>
       {!isCurrent ? (
-        <Button render={<Link href="/dashboard" />} variant="ghost" size="sm">
+        <Button render={<Link href={basePath} />} variant="ghost" size="sm">
           Ce mois-ci
         </Button>
       ) : null}

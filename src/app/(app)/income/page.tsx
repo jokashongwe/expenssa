@@ -7,8 +7,13 @@ function isMissingTable(error: unknown) {
   return /income_sources/.test(msg) && /(does not exist|n'existe pas|42P01)/i.test(msg);
 }
 
-export default async function IncomePage() {
+export default async function IncomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ new?: string }>;
+}) {
   const space = await getSpaceContext();
+  const params = await searchParams;
   const currencies = await getUserCurrencies(space.ownerId);
 
   let overview;
@@ -38,6 +43,7 @@ export default async function IncomePage() {
       analysis={overview.analysis}
       currencies={currencies}
       displayCode={overview.display.code}
+      openNew={params.new === "1"}
     />
   );
 }

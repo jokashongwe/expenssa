@@ -34,6 +34,7 @@ import {
 } from "@/lib/actions/income";
 import { LEVEL_COPY, type HealthAnalysis, type HealthLevel } from "@/lib/income";
 import { formatMoney } from "@/lib/money";
+import { Stepper } from "@/components/ui-kit/stepper";
 import type { Currency } from "@/lib/db/schema";
 
 type Source = {
@@ -92,6 +93,95 @@ function SourceForm({
     editing?.frequency ?? "month"
   );
 
+  const nameField = (
+    <div className="space-y-2">
+      <Label htmlFor="inc-name">Source de revenu</Label>
+      <Input
+        id="inc-name"
+        name="name"
+        required
+        maxLength={80}
+        placeholder="Salaire, loyer perçu, activité…"
+        defaultValue={editing?.name ?? ""}
+      />
+    </div>
+  );
+
+  const freqField = (
+    <div className="space-y-2">
+      <Label id="inc-freq-label">Je le reçois…</Label>
+      <div
+        role="radiogroup"
+        aria-labelledby="inc-freq-label"
+        className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
+      >
+        {(
+          [
+            ["month", "Chaque mois"],
+            ["year", "Chaque année"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={frequency === value}
+            onClick={() => setFrequency(value)}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              frequency === value
+                ? "bg-background shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <input type="hidden" name="frequency" value={frequency} />
+    </div>
+  );
+
+  const amountFields = (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-2">
+        <Label htmlFor="inc-amount">
+          Montant {frequency === "year" ? "par an" : "par mois"}
+        </Label>
+        <Input
+          id="inc-amount"
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          pattern="[0-9\s]*[.,]?[0-9]*"
+          required
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
+        <input
+          type="hidden"
+          name="amount"
+          value={amount.replace(/\s/g, "").replace(",", ".")}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="inc-currency">Devise</Label>
+        <select
+          id="inc-currency"
+          name="currencyId"
+          required
+          defaultValue={editing?.currencyId ?? defaultCurrency?.id ?? ""}
+          className={selectClass}
+        >
+          {currencies.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.code}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+
   return (
     <ActionForm
       action={editing ? updateIncomeSourceAction : createIncomeSourceAction}
@@ -99,87 +189,32 @@ function SourceForm({
       onSuccess={onDone}
     >
       {editing && <input type="hidden" name="id" value={editing.id} />}
-      <div className="space-y-2">
-        <Label htmlFor="inc-name">Source de revenu</Label>
-        <Input
-          id="inc-name"
-          name="name"
-          required
-          maxLength={80}
-          placeholder="Salaire, loyer perçu, activité…"
-          defaultValue={editing?.name ?? ""}
+      {editing ? (
+        <>
+          {nameField}
+          {amountFields}
+          {freqField}
+          <Button type="submit" className="w-full">
+            Enregistrer
+          </Button>
+        </>
+      ) : (
+        <Stepper
+          submitLabel="Ajouter ce revenu"
+          steps={[
+            {
+              title: "D'où vient cet argent ?",
+              content: (
+                <>
+                  {nameField}
+                  {freqField}
+                </>
+              ),
+            },
+            { title: "Combien recevez-vous ?", content: amountFields },
+          ]}
         />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="inc-amount">Montant</Label>
-          <Input
-            id="inc-amount"
-            type="text"
-            inputMode="decimal"
-            autoComplete="off"
-            pattern="[0-9\s]*[.,]?[0-9]*"
-            required
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-          <input
-            type="hidden"
-            name="amount"
-            value={amount.replace(/\s/g, "").replace(",", ".")}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="inc-currency">Devise</Label>
-          <select
-            id="inc-currency"
-            name="currencyId"
-            required
-            defaultValue={editing?.currencyId ?? defaultCurrency?.id ?? ""}
-            className={selectClass}
-          >
-            {currencies.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label id="inc-freq-label">Fréquence</Label>
-        <div
-          role="radiogroup"
-          aria-labelledby="inc-freq-label"
-          className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1"
-        >
-          {(
-            [
-              ["month", "Mensuel"],
-              ["year", "Annuel"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={frequency === value}
-              onClick={() => setFrequency(value)}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                frequency === value
-                  ? "bg-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <input type="hidden" name="frequency" value={frequency} />
-      </div>
-      <Button type="submit" className="w-full">
-        Enregistrer
-      </Button>
+      )}
     </ActionForm>
   );
 }
@@ -189,14 +224,16 @@ export function IncomeClient({
   analysis,
   currencies,
   displayCode,
+  openNew = false,
 }: {
   sources: Source[];
   analysis: HealthAnalysis;
   currencies: Currency[];
   displayCode: string;
+  openNew?: boolean;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(openNew);
   const [editing, setEditing] = useState<Source | null>(null);
 
   const money = (v: number) => formatMoney(v, displayCode);
@@ -211,8 +248,8 @@ export function IncomeClient({
         <div>
           <h1 className="font-sans text-3xl font-medium">Mes revenus</h1>
           <p className="text-sm text-muted-foreground">
-            Renseignez vos revenus pour vérifier que vos budgets sont tenables
-            (montants en {displayCode} par mois).
+            Dites-nous ce que vous gagnez : on vérifie que vos budgets sont
+            tenables (montants en {displayCode} par mois).
           </p>
         </div>
         <Dialog
@@ -254,7 +291,7 @@ export function IncomeClient({
 
       <section
         aria-labelledby="health-title"
-        className={`space-y-4 rounded-xl border p-4 ${style.box}`}
+        className={`space-y-4 rounded-2xl border p-4 ${style.box}`}
       >
         <div className="flex items-start gap-3">
           <LevelIcon className="mt-0.5 size-6 shrink-0" aria-hidden />
@@ -385,7 +422,7 @@ export function IncomeClient({
           sources.map((s) => (
             <div
               key={s.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-card/80 px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-sm"
             >
               <div className="min-w-0">
                 <p className="truncate font-medium">{s.name}</p>

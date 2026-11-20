@@ -13,8 +13,10 @@ import {
   Users,
   Ellipsis,
   Plus,
+  BarChart3,
 } from "lucide-react";
 import { useState } from "react";
+import { AddSheet } from "@/components/layout/add-sheet";
 import { BrandLogo } from "@/components/brand/logo";
 import {
   SpaceSwitcher,
@@ -40,13 +42,22 @@ type NavItem = {
   icon: typeof Users;
 };
 
+const navHome: NavItem = { href: "/dashboard", label: "Accueil", icon: LayoutDashboard };
+const navSavings: NavItem = { href: "/savings", label: "Objectifs d'épargne", short: "Objectifs", icon: PiggyBank };
+const navBudgets: NavItem = { href: "/budgets", label: "Budgets", short: "Budget", icon: Wallet };
+const navTransactions: NavItem = { href: "/transactions", label: "Transactions", icon: ArrowLeftRight };
+const navIncome: NavItem = { href: "/income", label: "Mes revenus", icon: HandCoins };
+const navAnalysis: NavItem = { href: "/analysis", label: "Analyse", icon: BarChart3 };
+const navCategories: NavItem = { href: "/categories", label: "Catégories", icon: Tags };
+
 const mainNav: NavItem[] = [
-  { href: "/dashboard", label: "Tableau de bord", short: "Accueil", icon: LayoutDashboard },
-  { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { href: "/budgets", label: "Budgets", icon: Wallet },
-  { href: "/savings", label: "Épargne", icon: PiggyBank },
-  { href: "/income", label: "Mes revenus", icon: HandCoins },
-  { href: "/categories", label: "Catégories", icon: Tags },
+  navHome,
+  navTransactions,
+  navBudgets,
+  navSavings,
+  navIncome,
+  navAnalysis,
+  navCategories,
 ];
 
 const settingsNav: NavItem[] = [
@@ -54,9 +65,16 @@ const settingsNav: NavItem[] = [
   { href: "/settings/sharing", label: "Partage", icon: Users },
 ];
 
-// Onglets du bas (mobile) : 4 sections principales + « Plus »
-const tabs = mainNav.slice(0, 4);
-const moreNav = [...mainNav.slice(4), ...settingsNav];
+// Barre du bas (mobile) : Accueil · Objectifs · [+] · Budget · Plus
+const tabsLeft = [navHome, navSavings];
+const tabsRight = [navBudgets];
+const moreNav = [
+  navTransactions,
+  navIncome,
+  navAnalysis,
+  navCategories,
+  ...settingsNav,
+];
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
@@ -141,34 +159,46 @@ function UserBadge({ userName }: { userName: string }) {
 function BottomTabs({ userName }: { userName: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const moreActive = moreNav.some((i) => isActive(pathname, i.href));
 
   const base =
     "flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2 text-[0.6875rem] font-medium outline-none transition-colors focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
+
+  const renderTab = (item: NavItem) => {
+    const active = isActive(pathname, item.href);
+    const Icon = item.icon;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        className={cn(base, active ? "text-primary" : "text-muted-foreground")}
+      >
+        <Icon className="size-5" aria-hidden />
+        <span className="truncate">{item.short ?? item.label}</span>
+      </Link>
+    );
+  };
 
   return (
     <nav
       aria-label="Navigation mobile"
       className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
-      {tabs.map((item) => {
-        const active = isActive(pathname, item.href);
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              base,
-              active ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            <Icon className="size-5" aria-hidden />
-            <span className="truncate">{item.short ?? item.label}</span>
-          </Link>
-        );
-      })}
+      {tabsLeft.map(renderTab)}
+      <div className="flex flex-1 items-start justify-center">
+        <button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          aria-label="Ajouter"
+          className="-mt-5 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg outline-none ring-4 ring-background transition-transform focus-visible:ring-ring active:scale-95"
+        >
+          <Plus className="size-6" aria-hidden />
+        </button>
+      </div>
+      {tabsRight.map(renderTab)}
+      <AddSheet open={addOpen} onOpenChange={setAddOpen} />
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           className={cn(
@@ -214,8 +244,7 @@ export function AppShell({
   userName: string;
   spaces: ShellSpaces;
 }) {
-  const pathname = usePathname();
-  const showFab = !pathname.startsWith("/transactions");
+  const [addOpen, setAddOpen] = useState(false);
 
   return (
     <div className="min-h-dvh app-bg">
@@ -227,6 +256,14 @@ export function AppShell({
             </Link>
           </div>
           <SpaceSwitcher {...spaces} className="mb-4" />
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="mb-3 flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Plus className="size-4" aria-hidden />
+            Ajouter
+          </button>
           <SidebarNav />
           <div className="mt-auto space-y-3 border-t border-border/60 pt-4">
             <UserBadge userName={userName} />
@@ -252,16 +289,7 @@ export function AppShell({
         </div>
       </div>
 
-      {showFab ? (
-        <Link
-          href="/transactions?new=1"
-          aria-label="Ajouter une transaction"
-          className="fixed bottom-20 right-4 z-30 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95 md:hidden"
-        >
-          <Plus className="size-6" aria-hidden />
-        </Link>
-      ) : null}
-
+      <AddSheet open={addOpen} onOpenChange={setAddOpen} side="right" />
       <BottomTabs userName={userName} />
     </div>
   );

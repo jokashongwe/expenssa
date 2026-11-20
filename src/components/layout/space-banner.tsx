@@ -10,7 +10,7 @@ export function SpaceBanner({
   if (isOwnSpace) return null;
   return (
     <div className="mb-4 rounded-lg border border-tint-border bg-tint px-3 py-2 text-sm text-tint-foreground">
-      Vous consultez l&apos;espace de <strong>{ownerName}</strong>.{" "}
+      Vous gérez ensemble l&apos;espace de <strong>{ownerName}</strong>.{" "}
       <Link href="/settings/sharing" className="font-medium underline">
         Changer d&apos;espace
       </Link>

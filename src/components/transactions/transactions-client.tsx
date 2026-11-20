@@ -7,7 +7,6 @@ import { Pencil, Plus, Receipt, Search, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ActionForm } from "@/components/forms/action-form";
 import { DeleteButton } from "@/components/delete-button";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -62,16 +61,18 @@ function TransactionForm({
   categories,
   currencies,
   onDone,
+  defaultType = "expense",
 }: {
   editing: Tx | null;
   categories: Category[];
   currencies: Currency[];
   onDone: () => void;
+  defaultType?: "income" | "expense";
 }) {
   const defaultCurrency =
     currencies.find((c) => c.isDefault) ?? currencies[0];
   const [type, setType] = useState<"income" | "expense">(
-    editing?.type ?? "expense"
+    editing?.type ?? defaultType
   );
   const [categoryId, setCategoryId] = useState(editing?.categoryId ?? "");
   const [amount, setAmount] = useState(
@@ -228,6 +229,7 @@ export function TransactionsClient({
   currencies,
   filters,
   openNew = false,
+  newType = "expense",
 }: {
   transactions: Tx[];
   total: number;
@@ -238,6 +240,7 @@ export function TransactionsClient({
   currencies: Currency[];
   filters: Filters;
   openNew?: boolean;
+  newType?: "income" | "expense";
 }) {
   const router = useRouter();
   const [navigating, startNav] = useTransition();
@@ -332,6 +335,7 @@ export function TransactionsClient({
             <TransactionForm
               key={editing?.id ?? "new"}
               editing={editing}
+              defaultType={newType}
               categories={categories}
               currencies={currencies}
               onDone={() => {
@@ -497,25 +501,32 @@ export function TransactionsClient({
                 return (
                   <div
                     key={tx.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-card/80 px-4 py-3"
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3.5 shadow-sm"
                   >
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span
+                        aria-hidden
+                        className="flex size-10 shrink-0 items-center justify-center rounded-xl"
+                        style={{ background: `${tx.categoryColor}26` }}
+                      >
                         <span
-                          className="size-2.5 shrink-0 rounded-full"
+                          className="size-3 rounded-full"
                           style={{ background: tx.categoryColor }}
-                          aria-hidden
                         />
-                        <p className="font-medium">{tx.categoryName}</p>
-                        <Badge variant="outline">
-                          {tx.type === "income" ? "Revenu" : "Dépense"}
-                        </Badge>
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">
+                          {tx.categoryName}
+                          <span className="sr-only">
+                            {tx.type === "income" ? " (revenu)" : " (dépense)"}
+                          </span>
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {grouped ? "" : `${formatDateFr(tx.date)}`}
+                          {!grouped && tx.note ? " · " : ""}
+                          {tx.note}
+                        </p>
                       </div>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {grouped ? "" : `${formatDateFr(tx.date)}`}
-                        {!grouped && tx.note ? " · " : ""}
-                        {tx.note}
-                      </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                       <span

@@ -1,19 +1,16 @@
 import Link from "next/link";
+import { ArrowRight, PiggyBank, Receipt, Wallet } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { EmptyState } from "@/components/empty-state";
-import { BarChart3, PiggyBank, Receipt, Wallet } from "lucide-react";
-import { AlertTriangle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ExpenseChart, TrendChart } from "@/components/dashboard/expense-chart";
+import { MonthCard } from "@/components/dashboard/month-card";
 import { MonthPicker } from "@/components/dashboard/month-picker";
-import { Delta } from "@/components/dashboard/delta";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { StatusPill, budgetStatus } from "@/components/ui-kit/status-pill";
 import { formatDateFr } from "@/lib/dates";
 import { formatMoney, periodLabel } from "@/lib/money";
-import { HealthCard } from "@/components/dashboard/health-card";
 import {
   getDashboardStats,
   getIncomeOverview,
@@ -34,7 +31,7 @@ export default async function DashboardPage({
   const monthLabel = format(reference, "MMMM yyyy", { locale: fr });
   const monthShort = format(reference, "MMMM", { locale: fr });
   const stats = await getDashboardStats(space.ownerId, reference);
-  // Optionnel : ne casse pas le dashboard si la table income_sources n'est pas migrée
+  // Optionnel : ne casse pas l'accueil si la table income_sources n'est pas migrée
   const overview = await getIncomeOverview(space.ownerId).catch(() => null);
   const code = stats.display.code;
   const greetName = space.isOwnSpace
@@ -43,234 +40,185 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="space-y-3">
         <div>
           <h1 className="font-sans text-3xl font-medium tracking-tight">
             Bonjour, {greetName}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Vue d&apos;ensemble en {code}
+          <p className="mt-1 text-sm text-muted-foreground">
+            {space.isOwnSpace
+              ? "Chaque effort compte : un budget tenu, c'est un projet qui se rapproche."
+              : "Gérez vos finances à deux, chacun avec les mêmes informations."}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <MonthPicker
-            month={month}
-            currentMonth={currentMonth}
-            label={monthLabel}
-          />
-          <Button render={<Link href="/transactions?new=1" />}>
-            Nouvelle transaction
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border-tint-border bg-gradient-to-br from-tint to-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Solde cumulé
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-medium tabular-nums">
-              {formatMoney(stats.balance, code)}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Revenus − dépenses, du début jusqu&apos;à fin {monthShort}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Revenus de {monthShort}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-medium tabular-nums text-income">
-              {formatMoney(stats.monthIncome, code)}
-            </p>
-            <Delta
-              current={stats.monthIncome}
-              previous={stats.prevIncome}
-              goodWhenUp
-            />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Dépenses de {monthShort}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-medium tabular-nums text-expense">
-              {formatMoney(stats.monthExpense, code)}
-            </p>
-            <Delta
-              current={stats.monthExpense}
-              previous={stats.prevExpense}
-              goodWhenUp={false}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {overview ? (
-        <HealthCard
-          analysis={overview.analysis}
-          displayCode={overview.display.code}
+        <MonthPicker
+          month={month}
+          currentMonth={currentMonth}
+          label={monthLabel}
         />
-      ) : null}
+      </div>
+
+      <MonthCard
+        monthLabel={monthShort}
+        income={stats.monthIncome}
+        expense={stats.monthExpense}
+        code={code}
+        analysis={overview?.analysis ?? null}
+        analysisCode={overview?.display.code ?? code}
+      />
 
       <Card>
-        <CardHeader>
-          <CardTitle>Revenus et dépenses sur 6 mois</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Mes budgets</CardTitle>
+          <Button render={<Link href="/budgets" />} variant="ghost" size="sm">
+            Tout voir
+          </Button>
         </CardHeader>
-        <CardContent>
-          <TrendChart data={stats.trend} currencyCode={code} />
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Dépenses par catégorie</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {stats.topCategories.length === 0 ? (
-              <EmptyState bordered={false} icon={BarChart3} title={`Aucune dépense en ${monthShort}`} description="Vos dépenses par catégorie apparaîtront ici." actionLabel="Ajouter une dépense" actionHref="/transactions" />
-            ) : (
-              <ExpenseChart data={stats.topCategories} currencyCode={code} />
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Budgets</CardTitle>
-            <Button render={<Link href="/budgets" />} variant="ghost" size="sm">
-              Voir tout
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {stats.budgetProgress.length === 0 ? (
-              <EmptyState bordered={false} icon={Wallet} title="Aucun budget défini" actionLabel="Créer un budget" actionHref="/budgets" />
-            ) : (
-              stats.budgetProgress.slice(0, 4).map((b) => (
-                <div key={b.id} className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2 text-sm">
-                    <span className="font-medium">{b.label}</span>
-                    <span className="tabular-nums text-muted-foreground">
-                      {formatMoney(b.spent, code)} / {formatMoney(b.limit, code)}
-                    </span>
+        <CardContent className="space-y-5">
+          {stats.budgetProgress.length === 0 ? (
+            <EmptyState
+              bordered={false}
+              icon={Wallet}
+              title="Aucun budget défini"
+              description="Fixez une limite par catégorie pour garder la main sur vos dépenses."
+              actionLabel="Créer un budget"
+              actionHref="/budgets?new=1"
+            />
+          ) : (
+            stats.budgetProgress.slice(0, 4).map((b) => {
+              const status = budgetStatus(b.rawPercent);
+              return (
+                <div key={b.id} className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{b.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {periodLabel(b.period as "month" | "week" | "day")} ·{" "}
+                        {formatMoney(b.spent, code)} sur{" "}
+                        {formatMoney(b.limit, code)}
+                      </p>
+                    </div>
+                    <StatusPill tone={status.tone}>{status.label}</StatusPill>
                   </div>
                   <Progress
                     value={b.percent}
                     aria-label={`Budget ${b.label} utilisé à ${Math.round(b.rawPercent)} %`}
                     indicatorClassName={
-                      b.over
+                      status.tone === "over"
                         ? "bg-destructive"
-                        : b.rawPercent >= 80
+                        : status.tone === "watch"
                           ? "bg-amber-500"
                           : undefined
                     }
                   />
-                  {b.over ? (
-                    <p className="flex items-center gap-1 text-xs text-destructive">
-                      <AlertTriangle className="size-3" aria-hidden />
-                      Budget dépassé : {Math.round(b.rawPercent)} % (
-                      {periodLabel(b.period as "month" | "week" | "day")})
-                    </p>
-                  ) : b.rawPercent >= 80 ? (
-                    <p className="flex items-center gap-1 text-xs text-warning-foreground">
-                      <AlertTriangle className="size-3" aria-hidden />
-                      Proche de la limite : {Math.round(b.rawPercent)} %
-                    </p>
-                  ) : null}
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              );
+            })
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Épargne</CardTitle>
-            <Button render={<Link href="/savings" />} variant="ghost" size="sm">
-              Voir tout
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {stats.plans.length === 0 ? (
-              <EmptyState bordered={false} icon={PiggyBank} title="Aucun plan d'épargne" actionLabel="Créer un plan" actionHref="/savings" />
-            ) : (
-              stats.plans.slice(0, 3).map((p) => (
-                <div key={p.id} className="space-y-1.5">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">{p.name}</span>
-                    <span className="tabular-nums text-muted-foreground">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Mes objectifs d&apos;épargne</CardTitle>
+          <Button render={<Link href="/savings" />} variant="ghost" size="sm">
+            Tout voir
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {stats.plans.length === 0 ? (
+            <EmptyState
+              bordered={false}
+              icon={PiggyBank}
+              title="Aucun objectif d'épargne"
+              description="Un projet en tête ? Nous calculons combien mettre de côté."
+              actionLabel="Créer un objectif"
+              actionHref="/savings?new=1"
+            />
+          ) : (
+            stats.plans.slice(0, 3).map((p) => (
+              <div key={p.id} className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatMoney(p.currentDisplay, code)} sur{" "}
+                      {formatMoney(p.targetDisplay, code)}
+                    </p>
+                  </div>
+                  {p.percent >= 100 ? (
+                    <StatusPill tone="good">Atteint</StatusPill>
+                  ) : (
+                    <span className="text-sm font-medium tabular-nums">
                       {Math.round(p.percent)}%
                     </span>
-                  </div>
-                  <Progress value={p.percent} />
+                  )}
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+                <Progress
+                  value={p.percent}
+                  aria-label={`Objectif ${p.name} atteint à ${Math.round(p.percent)} %`}
+                />
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Récentes</CardTitle>
-            <Button
-              render={<Link href="/transactions" />}
-              variant="ghost"
-              size="sm"
-            >
-              Tout voir
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {stats.recent.length === 0 ? (
-              <EmptyState bordered={false} icon={Receipt} title="Aucune transaction pour l'instant" actionLabel="Ajouter une transaction" actionHref="/transactions" />
-            ) : (
-              stats.recent.map((tx) => (
-                <div
-                  key={tx.id}
-                  className="flex items-center justify-between gap-3 text-sm"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{tx.categoryName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDateFr(tx.date)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={tx.type === "income" ? "secondary" : "outline"}
-                    >
-                      {tx.type === "income" ? "Revenu" : "Dépense"}
-                    </Badge>
-                    <span
-                      className={`tabular-nums font-medium ${
-                        tx.type === "income"
-                          ? "text-income"
-                          : "text-expense"
-                      }`}
-                    >
-                      {tx.type === "income" ? "+" : "-"}
-                      {formatMoney(tx.amount, tx.currencyCode)}
-                    </span>
-                  </div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Activité récente</CardTitle>
+          <Button
+            render={<Link href="/transactions" />}
+            variant="ghost"
+            size="sm"
+          >
+            Tout voir
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {stats.recent.length === 0 ? (
+            <EmptyState
+              bordered={false}
+              icon={Receipt}
+              title="Aucune transaction pour l'instant"
+              description="Notez une dépense ou un revenu pour démarrer."
+              actionLabel="Ajouter une dépense"
+              actionHref="/transactions?new=expense"
+            />
+          ) : (
+            stats.recent.slice(0, 5).map((tx) => (
+              <div
+                key={tx.id}
+                className="flex items-center justify-between gap-3 text-sm"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{tx.categoryName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDateFr(tx.date)}
+                    {tx.note ? ` · ${tx.note}` : ""}
+                  </p>
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                <span
+                  className={`shrink-0 font-medium tabular-nums ${
+                    tx.type === "income" ? "text-income" : "text-expense"
+                  }`}
+                >
+                  {tx.type === "income" ? "+" : "-"}
+                  {formatMoney(tx.amount, tx.currencyCode)}
+                </span>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Link
+        href={`/analysis${month === currentMonth ? "" : `?month=${month}`}`}
+        className="flex items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        Voir l&apos;analyse détaillée
+        <ArrowRight className="size-4" aria-hidden />
+      </Link>
     </div>
   );
 }

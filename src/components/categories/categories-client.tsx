@@ -56,7 +56,7 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
         <div>
           <h1 className="font-sans text-3xl font-medium">Catégories</h1>
           <p className="text-sm text-muted-foreground">
-            Personnalisez vos catégories de revenus et dépenses
+            Vos catégories de revenus et de dépenses, à votre façon
           </p>
         </div>
         <Dialog
@@ -155,7 +155,7 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
         {categories.map((cat) => (
           <div
             key={cat.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-card/80 px-4 py-3"
+            className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card shadow-sm px-4 py-3"
           >
             <div className="flex items-center gap-3">
               <span

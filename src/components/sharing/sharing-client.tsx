@@ -71,14 +71,14 @@ export function SharingClient({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-sans text-3xl font-medium">Partage d&apos;espace</h1>
+        <h1 className="font-sans text-3xl font-medium">Votre espace à deux</h1>
         <p className="text-sm text-muted-foreground">
-          Invitez un autre utilisateur Expenssa à consulter et gérer votre
-          budget avec vous.
+          Invitez votre partenaire (ou un proche) : vous gérez le même budget,
+          avec les mêmes revenus, dépenses et objectifs.
         </p>
       </div>
 
-      <section className="space-y-3 rounded-xl border border-border/70 bg-card/80 p-4">
+      <section className="space-y-3 rounded-2xl border border-border/70 bg-card shadow-sm p-4">
         <h2 className="font-medium">Espace actif</h2>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -106,7 +106,7 @@ export function SharingClient({
       </section>
 
       {incoming.length > 0 && (
-        <section className="space-y-3 rounded-xl border border-warning-border bg-warning text-warning-foreground p-4">
+        <section className="space-y-3 rounded-2xl border border-warning-border bg-warning text-warning-foreground p-4">
           <h2 className="font-medium">Invitations reçues</h2>
           {incoming.map((inv) => (
             <div
@@ -138,8 +138,8 @@ export function SharingClient({
         </section>
       )}
 
-      <section className="space-y-3 rounded-xl border border-border/70 bg-card/80 p-4">
-        <h2 className="font-medium">Inviter quelqu&apos;un</h2>
+      <section className="space-y-3 rounded-2xl border border-border/70 bg-card shadow-sm p-4">
+        <h2 className="font-medium">Inviter mon partenaire</h2>
         <ActionForm
           action={inviteToSpaceAction}
           className="flex flex-wrap items-end gap-3"
@@ -159,7 +159,7 @@ export function SharingClient({
         </ActionForm>
       </section>
 
-      <section className="space-y-3 rounded-xl border border-border/70 bg-card/80 p-4">
+      <section className="space-y-3 rounded-2xl border border-border/70 bg-card shadow-sm p-4">
         <h2 className="font-medium">Personnes ayant accès à mon espace</h2>
         {outgoing.length === 0 ? (
           <EmptyState bordered={false} icon={Users} title="Aucun partage pour l'instant" description="Invitez une personne pour lui donner accès à votre espace." />
