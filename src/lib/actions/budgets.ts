@@ -9,12 +9,23 @@ import { getSpaceContext } from "@/lib/space";
 import type { ActionState } from "./auth";
 
 const budgetSchema = z.object({
+  title: z.string().trim().max(80, "Titre trop long (80 caractères max)").optional(),
   categoryId: z.string().min(1),
   currencyId: z.string().min(1),
   amount: z.coerce.number().positive(),
   period: z.enum(["month", "week", "day"]),
   startDate: z.string().min(1),
 });
+
+/** Message clair si la colonne `title` n'a pas encore été migrée. */
+function titleMigrationError(error: unknown): string {
+  const msg =
+    error instanceof Error ? `${error.message} ${String(error.cause ?? "")}` : "";
+  if (/title/.test(msg) && /(does not exist|42703)/i.test(msg)) {
+    return "Migration requise : exécutez scripts/migrate-budget-title.mjs puis réessayez.";
+  }
+  return "Impossible d'enregistrer le budget";
+}
 
 export async function createBudgetAction(
   _prev: ActionState,
@@ -24,6 +35,7 @@ export async function createBudgetAction(
   if (!canWrite) return { error: "Lecture seule sur cet espace" };
 
   const parsed = budgetSchema.safeParse({
+    title: formData.get("title") || undefined,
     categoryId: formData.get("categoryId"),
     currencyId: formData.get("currencyId"),
     amount: formData.get("amount"),
@@ -32,11 +44,18 @@ export async function createBudgetAction(
   });
   if (!parsed.success) return { error: "Vérifiez les champs du budget" };
 
-  await db.insert(budgets).values({
-    id: crypto.randomUUID(),
-    userId: ownerId,
-    ...parsed.data,
-  });
+  const { title, ...rest } = parsed.data;
+  try {
+    await db.insert(budgets).values({
+      id: crypto.randomUUID(),
+      userId: ownerId,
+      ...rest,
+      // Sans titre, on n'écrit pas la colonne (fonctionne avant la migration)
+      ...(title ? { title } : {}),
+    });
+  } catch (error) {
+    return { error: titleMigrationError(error) };
+  }
 
   revalidatePath("/budgets");
   revalidatePath("/dashboard");
@@ -52,6 +71,7 @@ export async function updateBudgetAction(
 
   const id = String(formData.get("id") ?? "");
   const parsed = budgetSchema.safeParse({
+    title: formData.get("title") || undefined,
     categoryId: formData.get("categoryId"),
     currencyId: formData.get("currencyId"),
     amount: formData.get("amount"),
@@ -60,10 +80,14 @@ export async function updateBudgetAction(
   });
   if (!id || !parsed.success) return { error: "Données invalides" };
 
-  await db
-    .update(budgets)
-    .set(parsed.data)
-    .where(and(eq(budgets.id, id), eq(budgets.userId, ownerId)));
+  try {
+    await db
+      .update(budgets)
+      .set({ ...parsed.data, title: parsed.data.title || null })
+      .where(and(eq(budgets.id, id), eq(budgets.userId, ownerId)));
+  } catch (error) {
+    return { error: titleMigrationError(error) };
+  }
 
   revalidatePath("/budgets");
   revalidatePath("/dashboard");

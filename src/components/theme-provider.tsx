@@ -10,23 +10,36 @@ import {
 } from "react";
 
 export type ThemePreference = "light" | "dark" | "system";
+export type FontScale = "normal" | "large" | "xlarge";
 
 const STORAGE_KEY = "expenssa-theme";
+const FONT_KEY = "expenssa-font-scale";
+
+/** Taille de police racine (Tailwind est en rem : tout le texte suit). */
+export const FONT_SCALES: Record<FontScale, string> = {
+  normal: "100%",
+  large: "112.5%",
+  xlarge: "125%",
+};
 
 type Ctx = {
   preference: ThemePreference;
   resolved: "light" | "dark";
   setPreference: (p: ThemePreference) => void;
+  fontScale: FontScale;
+  setFontScale: (s: FontScale) => void;
 };
 
 const ThemeContext = createContext<Ctx>({
   preference: "system",
   resolved: "light",
   setPreference: () => {},
+  fontScale: "normal",
+  setFontScale: () => {},
 });
 
-/** Script exécuté avant l'hydratation pour éviter un flash de thème clair. */
-export const themeInitScript = `(function(){try{var p=localStorage.getItem('${STORAGE_KEY}');var d=p==='dark'||((!p||p==='system')&&matchMedia('(prefers-color-scheme: dark)').matches);var c=document.documentElement.classList;d?c.add('dark'):c.remove('dark');}catch(e){}})();`;
+/** Script exécuté avant l'hydratation pour éviter un flash (thème et taille de texte). */
+export const themeInitScript = `(function(){try{var p=localStorage.getItem('${STORAGE_KEY}');var d=p==='dark'||((!p||p==='system')&&matchMedia('(prefers-color-scheme: dark)').matches);var c=document.documentElement.classList;d?c.add('dark'):c.remove('dark');var f=localStorage.getItem('${FONT_KEY}');var m=${JSON.stringify(FONT_SCALES)};if(f&&m[f])document.documentElement.style.fontSize=m[f];}catch(e){}})();`;
 
 function systemPrefersDark() {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -82,9 +95,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     [apply]
   );
 
+  const [fontScale, setScale] = useState<FontScale>("normal");
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(FONT_KEY);
+      if (v === "normal" || v === "large" || v === "xlarge") setScale(v);
+    } catch {}
+  }, []);
+
+  const setFontScale = useCallback((s: FontScale) => {
+    setScale(s);
+    document.documentElement.style.fontSize = FONT_SCALES[s];
+    try {
+      localStorage.setItem(FONT_KEY, s);
+    } catch {}
+  }, []);
+
   const value = useMemo(
-    () => ({ preference, resolved, setPreference }),
-    [preference, resolved, setPreference]
+    () => ({ preference, resolved, setPreference, fontScale, setFontScale }),
+    [preference, resolved, setPreference, fontScale, setFontScale]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

@@ -13,7 +13,12 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatDateFr } from "@/lib/dates";
 import { formatMoney, periodLabel } from "@/lib/money";
-import { getDashboardStats, parseMonthParam } from "@/lib/queries";
+import { HealthCard } from "@/components/dashboard/health-card";
+import {
+  getDashboardStats,
+  getIncomeOverview,
+  parseMonthParam,
+} from "@/lib/queries";
 import { getSpaceContext } from "@/lib/space";
 
 export default async function DashboardPage({
@@ -29,6 +34,8 @@ export default async function DashboardPage({
   const monthLabel = format(reference, "MMMM yyyy", { locale: fr });
   const monthShort = format(reference, "MMMM", { locale: fr });
   const stats = await getDashboardStats(space.ownerId, reference);
+  // Optionnel : ne casse pas le dashboard si la table income_sources n'est pas migrée
+  const overview = await getIncomeOverview(space.ownerId).catch(() => null);
   const code = stats.display.code;
   const greetName = space.isOwnSpace
     ? space.user.name.split(" ")[0]
@@ -109,6 +116,13 @@ export default async function DashboardPage({
         </Card>
       </div>
 
+      {overview ? (
+        <HealthCard
+          analysis={overview.analysis}
+          displayCode={overview.display.code}
+        />
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Revenus et dépenses sur 6 mois</CardTitle>
@@ -146,14 +160,14 @@ export default async function DashboardPage({
               stats.budgetProgress.slice(0, 4).map((b) => (
                 <div key={b.id} className="space-y-1.5">
                   <div className="flex items-center justify-between gap-2 text-sm">
-                    <span className="font-medium">{b.categoryName}</span>
+                    <span className="font-medium">{b.label}</span>
                     <span className="tabular-nums text-muted-foreground">
                       {formatMoney(b.spent, code)} / {formatMoney(b.limit, code)}
                     </span>
                   </div>
                   <Progress
                     value={b.percent}
-                    aria-label={`Budget ${b.categoryName} utilisé à ${Math.round(b.rawPercent)} %`}
+                    aria-label={`Budget ${b.label} utilisé à ${Math.round(b.rawPercent)} %`}
                     indicatorClassName={
                       b.over
                         ? "bg-destructive"

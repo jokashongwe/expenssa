@@ -1,16 +1,39 @@
-import { and, eq, gte, ilike, lte, or } from "drizzle-orm";
+import { and, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   budgetPlannedItems,
   budgets,
   categories,
   currencies,
+  incomeSources,
   savingsPlans,
   transactions,
   users,
 } from "@/lib/db/schema";
 import { periodRange, type Period } from "@/lib/dates";
-import { toDisplayAmount } from "@/lib/money";
+import { analyzeBudgetHealth, toMonthly, type Frequency } from "@/lib/income";
+import { suggestedContribution, toDisplayAmount } from "@/lib/money";
+
+/**
+ * Tolérance avant migration : si la colonne budgets.title n'existe pas encore,
+ * on relance la requête avec NULL à la place (re-teste après 30 s).
+ */
+let titleMissingSince = 0;
+async function withBudgetTitle<T>(
+  build: (title: typeof budgets.title) => Promise<T>
+): Promise<T> {
+  if (Date.now() - titleMissingSince > 30_000) {
+    try {
+      return await build(budgets.title);
+    } catch (error) {
+      const msg =
+        error instanceof Error ? `${error.message} ${String(error.cause ?? "")}` : "";
+      if (!(/title/.test(msg) && /(does not exist|42703)/i.test(msg))) throw error;
+      titleMissingSince = Date.now();
+    }
+  }
+  return build(sql`NULL::text`.as("title") as unknown as typeof budgets.title);
+}
 
 export async function getUserRecord(userId: string) {
   const [user] = await db
@@ -232,9 +255,11 @@ export async function getDashboardStats(userId: string, reference = new Date()) 
     else monthExpense += converted;
   }
 
-  const budgetRows = await db
+  const budgetRows = await withBudgetTitle((title) =>
+    db
     .select({
       id: budgets.id,
+      title,
       amount: budgets.amount,
       period: budgets.period,
       categoryId: budgets.categoryId,
@@ -247,7 +272,8 @@ export async function getDashboardStats(userId: string, reference = new Date()) 
     .from(budgets)
     .innerJoin(categories, eq(budgets.categoryId, categories.id))
     .innerJoin(currencies, eq(budgets.currencyId, currencies.id))
-    .where(eq(budgets.userId, userId));
+    .where(eq(budgets.userId, userId))
+  );
 
   const budgetProgress = budgetRows.map((b) => {
     const range = periodRange(b.period as Period, reference);
@@ -272,6 +298,7 @@ export async function getDashboardStats(userId: string, reference = new Date()) 
     );
     return {
       ...b,
+      label: b.title?.trim() || b.categoryName,
       spent,
       limit,
       percent: limit > 0 ? Math.min(100, (spent / limit) * 100) : 0,
@@ -331,9 +358,11 @@ export async function getDashboardStats(userId: string, reference = new Date()) 
 export async function getBudgetDetails(userId: string) {
   const display = await getDisplayCurrency(userId);
   const txs = await getUserTransactions(userId);
-  const rows = await db
+  const rows = await withBudgetTitle((title) =>
+    db
     .select({
       id: budgets.id,
+      title,
       amount: budgets.amount,
       period: budgets.period,
       startDate: budgets.startDate,
@@ -347,7 +376,8 @@ export async function getBudgetDetails(userId: string) {
     .from(budgets)
     .innerJoin(categories, eq(budgets.categoryId, categories.id))
     .innerJoin(currencies, eq(budgets.currencyId, currencies.id))
-    .where(eq(budgets.userId, userId));
+    .where(eq(budgets.userId, userId))
+  );
 
   const planned = await db
     .select()
@@ -393,6 +423,7 @@ export async function getBudgetDetails(userId: string) {
 
     return {
       ...b,
+      label: b.title?.trim() || b.categoryName,
       spent: spentNative,
       percent: b.amount > 0 ? Math.min(100, (spentNative / b.amount) * 100) : 0,
       over: spentNative > b.amount,
@@ -419,6 +450,7 @@ export async function getSavingsDetails(userId: string) {
       startDate: savingsPlans.startDate,
       currencyId: savingsPlans.currencyId,
       currencyCode: currencies.code,
+      rateToUsd: currencies.rateToUsd,
     })
     .from(savingsPlans)
     .innerJoin(currencies, eq(savingsPlans.currencyId, currencies.id))
@@ -440,4 +472,74 @@ export async function filterTransactionsInRange(
         lte(transactions.date, end)
       )
     );
+}
+
+export async function getIncomeSources(userId: string) {
+  return db
+    .select({
+      id: incomeSources.id,
+      name: incomeSources.name,
+      amount: incomeSources.amount,
+      frequency: incomeSources.frequency,
+      currencyId: incomeSources.currencyId,
+      currencyCode: currencies.code,
+      rateToUsd: currencies.rateToUsd,
+    })
+    .from(incomeSources)
+    .innerJoin(currencies, eq(incomeSources.currencyId, currencies.id))
+    .where(eq(incomeSources.userId, userId));
+}
+
+/** Revenus déclarés vs budgets : tout ramené au mois, en devise d'affichage. */
+export async function getIncomeOverview(userId: string) {
+  const display = await getDisplayCurrency(userId);
+  const [sources, budgetList, plans, txs] = await Promise.all([
+    getIncomeSources(userId),
+    getBudgetDetails(userId),
+    getSavingsDetails(userId),
+    getUserTransactions(userId),
+  ]);
+  const conv = (amount: number, rateToUsd: number) =>
+    toDisplayAmount(amount, { rateToUsd }, display);
+
+  const sourcesView = sources.map((s) => {
+    const native = toMonthly(s.amount, s.frequency as Frequency);
+    return {
+      ...s,
+      monthlyNative: native,
+      monthlyDisplay: conv(native, s.rateToUsd),
+    };
+  });
+  const monthlyIncome = sourcesView.reduce((sum, s) => sum + s.monthlyDisplay, 0);
+
+  const budgetLines = budgetList.map((b) => ({
+    id: b.id,
+    name: b.label,
+    monthly: conv(toMonthly(b.amount, b.period as Frequency), b.rateToUsd),
+    spent: conv(b.spent, b.rateToUsd),
+    limit: conv(b.amount, b.rateToUsd),
+  }));
+
+  // Épargne : contribution périodique des plans non terminés, ramenée au mois
+  const savingsMonthly = plans
+    .filter((p) => p.currentAmount < p.targetAmount)
+    .reduce((sum, p) => {
+      const perPeriod = suggestedContribution(p.targetAmount, p.durationUnits);
+      return sum + conv(toMonthly(perPeriod, p.periodicity as Frequency), p.rateToUsd);
+    }, 0);
+
+  const month = periodRange("month");
+  const monthExpense = txs
+    .filter((t) => t.type === "expense" && t.date >= month.start && t.date <= month.end)
+    .reduce((sum, t) => sum + conv(t.amount, t.rateToUsd), 0);
+
+  const analysis = analyzeBudgetHealth({
+    monthlyIncome,
+    budgets: budgetLines,
+    savingsMonthly,
+    monthExpense,
+  });
+
+  return { display, sources: sourcesView, analysis };
+
 }

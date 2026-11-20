@@ -92,3 +92,17 @@ CREATE TABLE IF NOT EXISTS space_shares (
 
 CREATE INDEX IF NOT EXISTS idx_space_shares_owner ON space_shares(owner_user_id);
 CREATE INDEX IF NOT EXISTS idx_space_shares_member ON space_shares(member_user_id);
+
+CREATE TABLE IF NOT EXISTS income_sources (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  currency_id TEXT NOT NULL REFERENCES currencies(id) ON DELETE RESTRICT,
+  name TEXT NOT NULL,
+  amount DOUBLE PRECISION NOT NULL,
+  frequency TEXT NOT NULL CHECK (frequency IN ('month', 'year')),
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_income_sources_user ON income_sources(user_id);
+
+ALTER TABLE budgets ADD COLUMN IF NOT EXISTS title TEXT;

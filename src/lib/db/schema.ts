@@ -68,6 +68,8 @@ export const budgets = pgTable("budgets", {
   currencyId: text("currency_id")
     .notNull()
     .references(() => currencies.id, { onDelete: "restrict" }),
+  /** Titre libre facultatif ; sinon on affiche le nom de la catégorie. */
+  title: text("title"),
   amount: doublePrecision("amount").notNull(),
   period: text("period", { enum: ["month", "week", "day"] }).notNull(),
   startDate: text("start_date").notNull(),
@@ -126,6 +128,22 @@ export const budgetPlannedItems = pgTable("budget_planned_items", {
   checked: boolean("checked").notNull().default(false),
 });
 
+/** Sources de revenus déclarées (mensuelles ou annuelles). */
+export const incomeSources = pgTable("income_sources", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  currencyId: text("currency_id")
+    .notNull()
+    .references(() => currencies.id, { onDelete: "restrict" }),
+  name: text("name").notNull(),
+  amount: doublePrecision("amount").notNull(),
+  frequency: text("frequency", { enum: ["month", "year"] }).notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export type IncomeSource = typeof incomeSources.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Currency = typeof currencies.$inferSelect;
 export type Category = typeof categories.$inferSelect;

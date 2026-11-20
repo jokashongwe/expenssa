@@ -8,6 +8,7 @@ import {
   Tags,
   PiggyBank,
   Wallet,
+  HandCoins,
   Coins,
   Users,
   Ellipsis,
@@ -20,6 +21,7 @@ import {
   type SwitcherSpace,
 } from "@/components/layout/space-switcher";
 import { PwaInstallPrompt } from "@/components/pwa-install";
+import { FontSizeControl } from "@/components/layout/font-size-control";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LogoutButton } from "@/components/layout/logout-button";
 import { cn } from "@/lib/utils";
@@ -43,6 +45,7 @@ const mainNav: NavItem[] = [
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/budgets", label: "Budgets", icon: Wallet },
   { href: "/savings", label: "Épargne", icon: PiggyBank },
+  { href: "/income", label: "Mes revenus", icon: HandCoins },
   { href: "/categories", label: "Catégories", icon: Tags },
 ];
 
@@ -53,7 +56,7 @@ const settingsNav: NavItem[] = [
 
 // Onglets du bas (mobile) : 4 sections principales + « Plus »
 const tabs = mainNav.slice(0, 4);
-const moreNav = [mainNav[4], ...settingsNav];
+const moreNav = [...mainNav.slice(4), ...settingsNav];
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
@@ -141,7 +144,7 @@ function BottomTabs({ userName }: { userName: string }) {
   const moreActive = moreNav.some((i) => isActive(pathname, i.href));
 
   const base =
-    "flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2 text-[11px] font-medium outline-none transition-colors focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
+    "flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2 text-[0.6875rem] font-medium outline-none transition-colors focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
 
   return (
     <nav
@@ -186,6 +189,7 @@ function BottomTabs({ userName }: { userName: string }) {
           </nav>
           <div className="mt-4 space-y-3 border-t border-border/60 pt-3">
             <ThemeToggle />
+            <FontSizeControl />
             <LogoutButton />
           </div>
         </SheetContent>
@@ -227,6 +231,7 @@ export function AppShell({
           <div className="mt-auto space-y-3 border-t border-border/60 pt-4">
             <UserBadge userName={userName} />
             <ThemeToggle />
+            <FontSizeControl />
             <LogoutButton />
           </div>
         </aside>

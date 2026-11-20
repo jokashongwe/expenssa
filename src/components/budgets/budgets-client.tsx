@@ -42,6 +42,8 @@ type PlannedItem = {
 
 type BudgetRow = {
   id: string;
+  title: string | null;
+  label: string;
   amount: number;
   period: string;
   startDate: string;
@@ -252,6 +254,16 @@ export function BudgetsClient({
             >
               {editing && <input type="hidden" name="id" value={editing.id} />}
               <div className="space-y-2">
+                <Label htmlFor="bg-title">Titre (facultatif)</Label>
+                <Input
+                  id="bg-title"
+                  name="title"
+                  maxLength={80}
+                  placeholder="Ex. Courses du mois, Restaurants…"
+                  defaultValue={editing?.title ?? ""}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="bg-category">Catégorie</Label>
                 <select
                   id="bg-category"
@@ -356,9 +368,10 @@ export function BudgetsClient({
                       style={{ background: b.categoryColor }}
                       aria-hidden
                     />
-                    <p className="font-medium">{b.categoryName}</p>
+                    <p className="font-medium">{b.label}</p>
                   </div>
                   <p className="text-xs text-muted-foreground">
+                    {b.title?.trim() ? `${b.categoryName} · ` : ""}
                     {periodLabel(b.period as "month" | "week" | "day")} ·{" "}
                     {formatMoney(b.amount, b.currencyCode)}
                   </p>
@@ -367,14 +380,14 @@ export function BudgetsClient({
                   <Button
                     size="sm"
                     variant="outline"
-                    aria-label={`Modifier le budget ${b.categoryName}`}
+                    aria-label={`Modifier le budget ${b.label}`}
                     onClick={() => setEditing(b)}
                   >
                     Modifier
                   </Button>
                   <DeleteButton
-                    ariaLabel={`Supprimer le budget ${b.categoryName}`}
-                    confirmMessage={`Supprimer le budget « ${b.categoryName} » ?`}
+                    ariaLabel={`Supprimer le budget ${b.label}`}
+                    confirmMessage={`Supprimer le budget « ${b.label} » ?`}
                     action={() => deleteBudgetAction(b.id)}
                   />
                 </div>
